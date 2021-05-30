@@ -13,7 +13,6 @@ Automatic Patrol Routes for NPCs
 
 You can have a token patrol a specific area by drawing a Polygon (other shapes are not supported) and in it's text propriety call it "Patrol" (upper case P). Any token in that area will patrol only inside that area
 
+[Video Link](https://streamable.com/txjm6x)
 
 ![alt text](https://github.com/theripper93/Patrol/raw/main/wiki/patrolspot.jpg)
-
-[Video Link](https://streamable.com/txjm6x)
