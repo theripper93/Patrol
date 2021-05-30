@@ -3,6 +3,7 @@ let _patrolSocket;
 Hooks.once("socketlib.ready", () => {
 	_patrolSocket = socketlib.registerModule(MODULE_NAME_PATROL);
 	_patrolSocket.register("spotted", patrolSpotted);
+  _patrolSocket.register("alerted", patrolAlerted);
 });
 
 Hooks.on("getSceneControlButtons", (controls, b, c) => {
@@ -40,9 +41,33 @@ Hooks.on("init", () => {
     },
   });
 
+  game.settings.register(MODULE_NAME_PATROL, "patrolAlertDelay", {
+    name: game.i18n.localize("patrol.settings.patrolAlertDelay.name"),
+    hint: game.i18n.localize("patrol.settings.patrolAlertDelay.hint"),
+    scope: "world",
+    config: true,
+    type: Number,
+    range: {
+      min: 0,
+      max: 10000,
+      step: 100,
+    },
+    default: 5000,
+  });
+
   game.settings.register(MODULE_NAME_PATROL, "patrolSound", {
     name: game.i18n.localize("patrol.settings.patrolSound.name"),
     hint: game.i18n.localize("patrol.settings.patrolSound.hint"),
+    scope: "world",
+    config: true,
+    type: String,
+    default: "",
+    filePicker: true
+  });
+
+  game.settings.register(MODULE_NAME_PATROL, "patrolAlert", {
+    name: game.i18n.localize("patrol.settings.patrolAlert.name"),
+    hint: game.i18n.localize("patrol.settings.patrolAlert.hint"),
     scope: "world",
     config: true,
     type: String,

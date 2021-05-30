@@ -1,6 +1,10 @@
 {
     "patrol.settings.patrolDelay.name": "Patrol delay (ms)",
     "patrol.settings.patrolDelay.hint": "Delay in milliseconds before each patrol route is computed (default 2500)",
+    "patrol.settings.patrolAlertDelay.name": "Alert delay (ms)",
+    "patrol.settings.patrolAlertDelay.hint": "Delay in milliseconds before an alerted enemy spots a character (default 5000). Set to 0 for no alert period",
+    "patrol.settings.patrolAlert.name": "Alerted sound effect",
+    "patrol.settings.patrolAlert.hint": "Sound to play when an enemy is alerted by a character",
     "patrol.settings.patrolSound.name": "Spotted sound effect",
     "patrol.settings.patrolSound.hint": "Sound to play when a token is spotted by an enemy",
     "patrol.tokenConfig.enablePatrol.name": "Enable Patrol",

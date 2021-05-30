@@ -30,6 +30,8 @@ class Patrol {
           visitedPositions: [`${t.x}-${t.y}`],
           patrolPolygon: tokenDrawing,
           canSpot: t.document.getFlag(MODULE_NAME_PATROL, "enableSpotting"),
+          alerted:false,
+          alertTimedOut:false
         });
       });
     this.characters = canvas.tokens.placeables.filter(
@@ -40,6 +42,12 @@ class Patrol {
   async patrolSetDelay(ms) {
     setTimeout(() => {
       this.executePatrol = true;
+    }, ms);
+  }
+  async patrolAlertTimeout(ms,token) {
+    setTimeout(() => {
+      token.alertTimedOut = true;
+      token.alerted = false;
     }, ms);
   }
 
@@ -165,17 +173,34 @@ class Patrol {
           { type: "sight" }
         )
       ) {
-        game.togglePause(true);
         let spotter = token.tokenDocument;
         let spotted = char;
+        if(game.settings.get(MODULE_NAME_PATROL, "patrolAlertDelay") == 0){
+          token.alerted=true
+          token.alertTimedOut=true
+        }
+        if(!token.alerted && !token.alertTimedOut){
+        // Allow a system / module to override if something was spotted
+        if (Hooks.call("prePatrolAlerted", spotter, spotted)) {
+          token.alerted=true
+          this.patrolAlertTimeout(game.settings.get(MODULE_NAME_PATROL, "patrolAlertDelay"),token)
+          // Inform any who want to do something with the spotted info
+          Hooks.callAll("patrolAlerted", spotter, spotted);
+        }
+        }else if(token.alertTimedOut){
         // Allow a system / module to override if something was spotted
         if (Hooks.call("prePatrolSpotted", spotter, spotted)) {
+          token.alerted=false
+          token.alertTimedOut=false
           // Inform any who want to do something with the spotted info
           Hooks.callAll("patrolSpotted", spotter, spotted);
         }
+        }
+        
         return true;
       }
     }
+    token.alertTimedOut=false
     return false;
   }
 }

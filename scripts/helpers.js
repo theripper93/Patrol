@@ -42,3 +42,43 @@ async function patrolSpotted(tokenId) {
     g.alpha -= 0.1;
   }
 }
+
+async function patrolAlerted(tokenId) {
+  let enemyToken = canvas.tokens.get(tokenId);
+  if(_patrol.DEBUG) console.log("Allerted:", enemyToken);
+  AudioHelper.play(
+    {
+      src: game.settings.get(MODULE_NAME_PATROL, "patrolAlert"),
+      volume: 0.8,
+      loop: false,
+    },
+    true
+  );
+  let exclamationMark = new PIXI.Text("?", {
+    fontFamily: "Impact",
+    strokeThickness: 6,
+    fontSize: 64*enemyToken.data.height,
+    fill: 0xfff200,
+    align: "center",
+  });
+  let pADelay = game.settings.get(MODULE_NAME_PATROL, "patrolAlertDelay")
+  let g = new PIXI.Graphics();
+  g.addChild(exclamationMark);
+  g.x =
+    enemyToken.x +
+    (enemyToken.data.width * canvas.scene.dimensions.size) / 2 -
+    g.width / 2;
+  g.y = enemyToken.y - g.height / 2;
+  canvas.foreground.addChild(g);
+  setTimeout(() => {
+    canvas.app.ticker.add(fade);
+  }, pADelay/5*4);
+  setTimeout(() => {
+    canvas.foreground.removeChild(g);
+    canvas.app.ticker.remove(fade);
+  }, pADelay);
+
+  function fade() {
+    g.alpha -= (pADelay-pADelay/5*4)/10000
+  }
+}

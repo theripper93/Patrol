@@ -10,3 +10,7 @@ Hooks.on("canvasReady",()=>{
 Hooks.on("patrolSpotted",( token, char)=>{
   _patrolSocket.executeForEveryone("spotted", token.id);
 });
+
+Hooks.on("patrolAlerted",( token, char)=>{
+  _patrolSocket.executeForEveryone("alerted", token.id);
+});
