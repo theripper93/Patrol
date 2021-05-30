@@ -6,3 +6,7 @@ Hooks.on("canvasReady",()=>{
   if(!_patrol) _patrol = Patrol.get()
   _patrol.patrolStart()
 })
+
+Hooks.on("patrolSpotted",( token, char)=>{
+  _patrolSocket.executeForEveryone("spotted", token.id);
+});
