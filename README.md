@@ -9,6 +9,11 @@ Automatic Patrol Routes for NPCs
 
 * **Spot Player Characters:** If enabled the token will spot player characters, pausing the game and panning on the token when spotting
 
+**Alerting**:
+
+* When a player is spotted a question mark will appear on top of the enemy token wich will then try to chase the intruder.
+* After a set time has passed the token will be spotted. You can configure sad time in the module settings. If the alert time is set to 0 the character will be immediately spotted
+
 **Custom Patrols**
 
 You can have a token patrol a specific area by drawing a Polygon (other shapes are not supported) and in it's text propriety call it "Patrol" (upper case P). Any token in that area will patrol only inside that area
