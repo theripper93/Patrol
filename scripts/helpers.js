@@ -65,16 +65,15 @@ async function patrolAlerted(tokenId) {
   let g = new PIXI.Graphics();
   g.addChild(exclamationMark);
   g.x =
-    enemyToken.x +
     (enemyToken.data.width * canvas.scene.dimensions.size) / 2 -
     g.width / 2;
-  g.y = enemyToken.y - g.height / 2;
-  canvas.foreground.addChild(g);
+  g.y = - g.height / 2;
+  enemyToken.addChild(g);
   setTimeout(() => {
     canvas.app.ticker.add(fade);
   }, pADelay/5*4);
   setTimeout(() => {
-    canvas.foreground.removeChild(g);
+    enemyToken.removeChild(g);
     canvas.app.ticker.remove(fade);
   }, pADelay);
 

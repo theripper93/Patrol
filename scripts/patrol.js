@@ -31,7 +31,8 @@ class Patrol {
           patrolPolygon: tokenDrawing,
           canSpot: t.document.getFlag(MODULE_NAME_PATROL, "enableSpotting"),
           alerted:false,
-          alertTimedOut:false
+          alertTimedOut:false,
+          spottedToken: undefined
         });
       });
     this.characters = canvas.tokens.placeables.filter(
@@ -44,6 +45,7 @@ class Patrol {
       this.executePatrol = true;
     }, ms);
   }
+
   async patrolAlertTimeout(ms,token) {
     setTimeout(() => {
       token.alertTimedOut = true;
@@ -72,7 +74,7 @@ class Patrol {
       let updates = [];
       for (let token of _patrol.tokens) {
         if (token.canSpot && _patrol.detectPlayer(token)) {
-          continue;
+          if(!token.alerted || canvas.grid.measureDistance(token.tokenDocument.center, token.spottedToken.center)< 10)continue;
         }
         if (token.tokenDocument._controlled) continue;
         let validPositions = _patrol.getValidPositions(token);
@@ -119,6 +121,15 @@ class Patrol {
       )
         validPositions.push(d);
     });
+    if(token.alerted && validPositions.length != 0){
+      const reducer = (previousPoint, currentPoint) => {
+          return canvas.grid.measureDistance(currentPoint.center, token.spottedToken.center) <
+            canvas.grid.measureDistance(previousPoint.center,  token.spottedToken.center)
+            ? currentPoint
+            : previousPoint;
+      };
+      return [validPositions.reduce(reducer)]
+    }
     return validPositions;
   }
 
@@ -183,6 +194,7 @@ class Patrol {
         // Allow a system / module to override if something was spotted
         if (Hooks.call("prePatrolAlerted", spotter, spotted)) {
           token.alerted=true
+          token.spottedToken = spotted
           this.patrolAlertTimeout(game.settings.get(MODULE_NAME_PATROL, "patrolAlertDelay"),token)
           // Inform any who want to do something with the spotted info
           Hooks.callAll("patrolAlerted", spotter, spotted);
@@ -192,6 +204,7 @@ class Patrol {
         if (Hooks.call("prePatrolSpotted", spotter, spotted)) {
           token.alerted=false
           token.alertTimedOut=false
+          token.spottedToken = undefined
           // Inform any who want to do something with the spotted info
           Hooks.callAll("patrolSpotted", spotter, spotted);
         }
@@ -203,4 +216,6 @@ class Patrol {
     token.alertTimedOut=false
     return false;
   }
+
+  
 }
