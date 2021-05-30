@@ -16,4 +16,4 @@ You can have a token patrol a specific area by drawing a Polygon (other shapes a
 
 ![alt text](https://github.com/theripper93/Patrol/raw/main/wiki/patrolspot.jpg)
 
-![alt text][Video Link](https://streamable.com/txjm6x)
+[Video Link](https://streamable.com/txjm6x)
