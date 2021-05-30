@@ -21,15 +21,17 @@ You can use Patrol's hooks to enable additional features. Use the hooks:
 
 Example:
 
+```js
 Hooks.on("prePatrolSpotted", (spotter, spotted) => {
   // Only actually spotted if the Spotter has a higher passive perception than the target's DC
   return spotter.passivePerception >= spotted.passiveDC;
 });
-
+```
+```js
 Hooks.on("patrolSpotted", (spotter, spotted) => {
   // Start a new combat if needed, then add the spotter to the spotted with a surprise round
 });
-
+```
 [Video Link](https://streamable.com/txjm6x)
 
 ![alt text](https://github.com/theripper93/Patrol/raw/main/wiki/patrolspot.jpg)
