@@ -18,6 +18,8 @@ You can have a token patrol a specific area by drawing a Polygon (other shapes a
 You can use Patrol's hooks to enable additional features. Use the hooks:
 * "prePatrolSpotted", (spotter, spotted)
 * "patrolSpotted", (spotter, spotted)
+* "prePatrolAlerted", (spotter, spotted)
+* "patrolAlerted", (spotter, spotted)
 
 Example:
 
