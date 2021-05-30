@@ -1,4 +1,6 @@
 {
+    "patrol.settings.patrolDiagonals.name": "Enable diagonal movement",
+    "patrol.settings.patrolDiagonals.hint": "Allow patrol tokens to move diagonally, will double the computation time",
     "patrol.settings.patrolDelay.name": "Patrol delay (ms)",
     "patrol.settings.patrolDelay.hint": "Delay in milliseconds before each patrol route is computed (default 2500)",
     "patrol.settings.patrolAlertDelay.name": "Alert delay (ms)",

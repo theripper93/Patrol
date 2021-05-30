@@ -5,6 +5,7 @@ class Patrol {
     this.executePatrol = false;
     this.started = false;
     this.delay = game.settings.get(MODULE_NAME_PATROL, "patrolDelay") || 2500;
+    this.diagonals = game.settings.get(MODULE_NAME_PATROL, "patrolDiagonals") || false
     this.DEBUG = false;
   }
 
@@ -59,7 +60,7 @@ class Patrol {
     canvas.app.ticker.add(this.patrolCompute);
   }
 
-  async patrolCompute() {
+  patrolCompute() {
     if (
       _patrol.executePatrol &&
       !game.paused &&
@@ -72,12 +73,18 @@ class Patrol {
       _patrol.executePatrol = false;
       _patrol.patrolSetDelay(_patrol.delay);
       let updates = [];
+      let occupiedPositions = [];
+      _patrol.tokens.filter(token => token.canSpot && _patrol.detectPlayer(token,true) && (!token.alerted || canvas.grid.measureDistance(token.tokenDocument.center, token.spottedToken.center)<10)).forEach((token)=>{
+        occupiedPositions.push(`${token.tokenDocument.x}-${token.tokenDocument.y}`)
+      })
       for (let token of _patrol.tokens) {
-        if (token.canSpot && _patrol.detectPlayer(token)) {
-          if(!token.alerted || canvas.grid.measureDistance(token.tokenDocument.center, token.spottedToken.center)< 10)continue;
+        if(token.spottedToken)occupiedPositions.push(`${token.spottedToken.x}-${token.spottedToken.y}`)
+        if (token.canSpot && _patrol.detectPlayer(token) && (!token.alerted || canvas.grid.measureDistance(token.tokenDocument.center, token.spottedToken.center)<10)) {
+            //occupiedPositions.push(`${token.tokenDocument.x}-${token.tokenDocument.y}`)
+            continue;
         }
         if (token.tokenDocument._controlled) continue;
-        let validPositions = _patrol.getValidPositions(token);
+        let validPositions = _patrol.getValidPositions(token,occupiedPositions);
         let newPosition =
           validPositions[
             Math.round(Math.random() * (validPositions.length - 1))
@@ -89,10 +96,12 @@ class Patrol {
             y: newPosition.y,
           });
           token.visitedPositions.push(`${newPosition.x}-${newPosition.y}`);
+          occupiedPositions.push(`${newPosition.x}-${newPosition.y}`)
         } else {
           token.visitedPositions = [
             `${token.tokenDocument.x}-${token.tokenDocument.y}`,
           ];
+          occupiedPositions.push(`${token.tokenDocument.x}-${token.tokenDocument.y}`)
         }
       }
       canvas.scene.updateEmbeddedDocuments("Token", updates);
@@ -108,11 +117,12 @@ class Patrol {
     }
   }
 
-  getValidPositions(token) {
+  getValidPositions(token,occupiedPositions) {
     let validPositions = [];
     this.getDirections(token.tokenDocument).forEach((d) => {
       if (
         !token.visitedPositions.includes(`${d.x}-${d.y}`) &&
+        !occupiedPositions.includes(`${d.x}-${d.y}`) &&
         (!token.patrolPolygon ||
           token.patrolPolygon.contains(d.center.x, d.center.y)) &&
         !canvas.walls.checkCollision(
@@ -135,7 +145,7 @@ class Patrol {
 
   getDirections(token) {
     let g = canvas.dimensions.size;
-    return [
+    let positions = [
       {
         x: token.x + g,
         y: token.y,
@@ -157,6 +167,27 @@ class Patrol {
         center: { x: token.center.x, y: token.center.y - g },
       },
     ];
+    if(this.diagonals)positions.push({
+      x: token.x + g,
+      y: token.y + g,
+      center: { x: token.center.x + g, y: token.center.y + g },
+    },
+    {
+      x: token.x - g,
+      y: token.y - g,
+      center: { x: token.center.x - g, y: token.center.y-g },
+    },
+    {
+      x: token.x - g,
+      y: token.y + g,
+      center: { x: token.center.x - g, y: token.center.y + g },
+    },
+    {
+      x: token.x + g,
+      y: token.y - g,
+      center: { x: token.center.x + g, y: token.center.y - g },
+    })
+    return positions
   }
 
   adjustPolygonPoints(drawing) {
@@ -167,7 +198,7 @@ class Patrol {
     return globalPoints;
   }
 
-  detectPlayer(token) {
+  detectPlayer(token,preventEvent=false) {
     let maxDistance = canvas.scene.data.globalLight
       ? 1000
       : Math.max(
@@ -184,6 +215,7 @@ class Patrol {
           { type: "sight" }
         )
       ) {
+        if(preventEvent) return true
         let spotter = token.tokenDocument;
         let spotted = char;
         if(game.settings.get(MODULE_NAME_PATROL, "patrolAlertDelay") == 0){
@@ -213,6 +245,7 @@ class Patrol {
         return true;
       }
     }
+    if(preventEvent) return false
     token.alertTimedOut=false
     return false;
   }

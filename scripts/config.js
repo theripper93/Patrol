@@ -24,6 +24,19 @@ Hooks.on("getSceneControlButtons", (controls, b, c) => {
 });
 
 Hooks.on("init", () => {
+
+  game.settings.register(MODULE_NAME_PATROL, "patrolDiagonals", {
+    name: game.i18n.localize("patrol.settings.patrolDiagonals.name"),
+    hint: game.i18n.localize("patrol.settings.patrolDiagonals.hint"),
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    onChange: (setting) => {
+      _patrol.diagonals = setting;
+    },
+  });
+
   game.settings.register(MODULE_NAME_PATROL, "patrolDelay", {
     name: game.i18n.localize("patrol.settings.patrolDelay.name"),
     hint: game.i18n.localize("patrol.settings.patrolDelay.hint"),
