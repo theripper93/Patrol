@@ -18,6 +18,10 @@ Automatic Patrol Routes for NPCs
 
 You can have a token patrol a specific area by drawing a Polygon (other shapes are not supported) and in it's text propriety call it "Patrol" (upper case P). Any token in that area will patrol only inside that area
 
+**Auto Rotate**
+
+Patrol is compatible with the Auto Rotate module. Combine them for auto rotating patrols!
+
 **Module\System\Macro Integration**
 
 You can use Patrol's hooks to enable additional features. Use the hooks:
