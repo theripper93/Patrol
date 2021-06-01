@@ -88,6 +88,8 @@ Hooks.on("init", () => {
     filePicker: true
   });
 
+  libWrapper.register(MODULE_NAME_PATROL,"Token.prototype.animateMovement", _patrolAnimateMovement, "OVERRIDE")
+
 });
 
 Hooks.on("renderTokenConfig", (app, html, data) => {
