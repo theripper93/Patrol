@@ -41,4 +41,9 @@ Hooks.on("patrolSpotted", (spotter, spotted) => {
 ```
 [Video Link](https://streamable.com/txjm6x)
 
+**Patrol Toggle**
+![alt text](https://github.com/theripper93/Patrol/raw/main/wiki/patroltoggle.jpg)
+**Patrol Token Config**
+![alt text](https://github.com/theripper93/Patrol/raw/main/wiki/patrolconfig.jpg)
+
 ![alt text](https://github.com/theripper93/Patrol/raw/main/wiki/patrolspot.jpg)
