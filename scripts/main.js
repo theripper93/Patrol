@@ -3,7 +3,14 @@ let _patrol
 
 Hooks.on("canvasReady",()=>{
   if(!game.user.isGM) return
-  if(!_patrol) _patrol = Patrol.get()
+  let patrolWasstarted = false
+  if(_patrol) {
+    _patrol.patrolStop()
+    patrolWasstarted = _patrol.started
+  }
+  _patrol = Patrol.get()
+  _patrol.started=patrolWasstarted
+  _patrol.patrolStop()
   _patrol.patrolStart()
 })
 

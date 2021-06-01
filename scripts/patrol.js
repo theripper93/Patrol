@@ -37,7 +37,7 @@ class Patrol {
         });
       });
     this.characters = canvas.tokens.placeables.filter(
-      (t) => t.actor.type == "character"
+      (t) => t.actor && t.actor.type == "character"
     );
   }
 
@@ -58,6 +58,10 @@ class Patrol {
     this.mapTokens();
     this.patrolSetDelay(this.delay);
     canvas.app.ticker.add(this.patrolCompute);
+  }
+
+  patrolStop() {
+    canvas.app.ticker.remove(this.patrolCompute);
   }
 
   patrolCompute() {
