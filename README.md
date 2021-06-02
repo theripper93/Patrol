@@ -22,6 +22,15 @@ You can have a token patrol a specific area by drawing a Polygon (other shapes a
 
 Patrol is compatible with the Auto Rotate module. Combine them for auto rotating patrols!
 
+**Patrol is not working!**
+
+If patrol is not working, check this steps before opening an issue:
+
+* If a token is selected it will stop patroling
+* If you create a combat encounter the patrol will stop
+* If you have the game paused, the patrol will stop
+* If you haven't toggled the patrol button the patrol will not start
+
 **Module\System\Macro Integration**
 
 You can use Patrol's hooks to enable additional features. Use the hooks:
