@@ -124,21 +124,21 @@ async function saveTokenConfigPT(event) {
 }
 
 Hooks.on("createDrawing", () => {
-  _patrol.mapTokens();
+  if(game.user.isGM) _patrol.mapTokens();
 });
 
 Hooks.on("updateDrawing", () => {
-  _patrol.mapTokens();
+  if(game.user.isGM) _patrol.mapTokens();
 });
 
 Hooks.on("deleteDrawing", () => {
-  _patrol.mapTokens();
+  if(game.user.isGM) _patrol.mapTokens();
 });
 
 Hooks.on("createToken", () => {
-  _patrol.mapTokens();
+  if(game.user.isGM) _patrol.mapTokens();
 });
 
 Hooks.on("deleteToken", () => {
-  _patrol.mapTokens();
+  if(game.user.isGM) _patrol.mapTokens();
 });

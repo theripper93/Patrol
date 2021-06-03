@@ -1,7 +1,7 @@
 async function patrolSpotted(tokenId) {
   game.togglePause(true);
   let enemyToken = canvas.tokens.get(tokenId);
-  if(_patrol.DEBUG) console.log("Spotted by:", enemyToken);
+  if(game.user.isGM && _patrol.DEBUG) console.log("Spotted by:", enemyToken);
   await canvas.animatePan({
     x: enemyToken.center.x,
     y: enemyToken.center.y,
@@ -45,7 +45,7 @@ async function patrolSpotted(tokenId) {
 
 async function patrolAlerted(tokenId) {
   let enemyToken = canvas.tokens.get(tokenId);
-  if(_patrol.DEBUG) console.log("Allerted:", enemyToken);
+  if(game.user.isGM && _patrol.DEBUG) console.log("Allerted:", enemyToken);
   AudioHelper.play(
     {
       src: game.settings.get(MODULE_NAME_PATROL, "patrolAlert"),
