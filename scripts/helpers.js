@@ -87,7 +87,7 @@ async function _patrolAnimateMovement(ray) {
   const s = canvas.dimensions.size;
   this._movement = ray;
   const speed = s * 10;
-  const duration = this.document.getFlag(MODULE_NAME_PATROL, "enablePatrol") && !this._controlled ? game.settings.get(MODULE_NAME_PATROL, "patrolDelay") : (ray.distance * 1000) / speed;
+  const duration = game.settings.get(MODULE_NAME_PATROL, "patrolSmooth") && this.document.getFlag(MODULE_NAME_PATROL, "enablePatrol") && !this._controlled ? game.settings.get(MODULE_NAME_PATROL, "patrolDelay") : (ray.distance * 1000) / speed;
 
   // Define attributes
   const attributes = [

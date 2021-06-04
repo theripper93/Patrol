@@ -68,7 +68,7 @@ class Patrol {
     if (
       _patrol.executePatrol &&
       !game.paused &&
-      !game.combat &&
+      !game.combat?.started &&
       _patrol.started
     ) {
       let perfStart, perfEnd;
