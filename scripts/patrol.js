@@ -211,8 +211,7 @@ class Patrol {
         );
     for (let char of this.characters) {
       if (
-        canvas.grid.measureDistance(token.tokenDocument.center, char.center) *
-          canvas.scene.dimensions.distance <=
+        canvas.grid.measureDistance(token.tokenDocument.center, char.center) <=
           maxDistance &&
         !canvas.walls.checkCollision(
           new Ray(token.tokenDocument.center, char.center),
