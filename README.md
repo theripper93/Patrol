@@ -52,6 +52,8 @@ Hooks.on("patrolSpotted", (spotter, spotted) => {
   // Start a new combat if needed, then add the spotter to the spotted with a surprise round
 });
 ```
+# Video Tutorial by *Check the Rulebook*
+
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/Izx441zjtBs/0.jpg)](https://www.youtube.com/watch?v=Izx441zjtBs)
 
 **Patrol Toggle**
