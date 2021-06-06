@@ -15,8 +15,7 @@ class Patrol {
 
   mapTokens() {
     let patrolDrawings = canvas.drawings.placeables.filter(
-      (d) => d.data.text == "Patrol" && d.data.points.length != 0
-    );
+      (d) => d.data.text == "Patrol");
     this.tokens = [];
     canvas.tokens.placeables
       .filter((t) => t.document.getFlag(MODULE_NAME_PATROL, "enablePatrol"))
@@ -196,9 +195,22 @@ class Patrol {
 
   adjustPolygonPoints(drawing) {
     let globalPoints = [];
-    drawing.data.points.forEach((p) => {
-      globalPoints.push(p[0] + drawing.x, p[1] + drawing.y);
-    });
+    if (drawing.data.points.length != 0) {
+      drawing.data.points.forEach((p) => {
+        globalPoints.push(p[0] + drawing.x, p[1] + drawing.y);
+      });
+    } else {
+      globalPoints = [
+        drawing.x,
+        drawing.y,
+        drawing.x + drawing.width,
+        drawing.y,
+        drawing.x + drawing.width,
+        drawing.y + drawing.height,
+        drawing.x,
+        drawing.y + drawing.height,
+      ];
+    }
     return globalPoints;
   }
 
