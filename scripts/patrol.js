@@ -90,7 +90,7 @@ class Patrol {
         let validPositions = _patrol.getValidPositions(token,occupiedPositions);
         let newPosition =
           validPositions[
-            Math.round(Math.random() * (validPositions.length - 1))
+            Math.floor(Math.random() * (validPositions.length))
           ];
         if (validPositions.length != 0) {
           updates.push({
