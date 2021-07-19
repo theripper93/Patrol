@@ -194,6 +194,9 @@ class Patrol {
       let snapped = canvas.grid.getSnappedPosition(pos.x,pos.y)
       pos.x = snapped.x
       pos.y = snapped.y
+      let snappedCenter = canvas.grid.getCenter(pos.center.x,pos.center.y)
+      pos.center.x = snappedCenter[0]
+      pos.center.y = snappedCenter[1]
     }
     return positions
   }
