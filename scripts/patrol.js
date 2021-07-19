@@ -190,6 +190,11 @@ class Patrol {
       y: token.y - g,
       center: { x: token.center.x + g, y: token.center.y - g },
     })
+    for(let pos of positions){
+      let snapped = canvas.grid.getSnappedPosition(pos.x,pos.y)
+      pos.x = snapped.x
+      pos.y = snapped.y
+    }
     return positions
   }
 
