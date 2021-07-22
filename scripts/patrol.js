@@ -101,8 +101,10 @@ class Patrol {
           token.visitedPositions.push(`${newPosition.x}-${newPosition.y}`);
           occupiedPositions.push(`${newPosition.x}-${newPosition.y}`)
         } else {
+          let snapped = canvas.grid.getSnappedPosition(token.tokenDocument.x,token.tokenDocument.y)
           token.visitedPositions = [
-            `${token.tokenDocument.x}-${token.tokenDocument.y}`,
+            
+            `${snapped.x}-${snapped.y}`,
           ];
           occupiedPositions.push(`${token.tokenDocument.x}-${token.tokenDocument.y}`)
         }
