@@ -36,7 +36,7 @@ class Patrol {
         });
       });
     this.characters = canvas.tokens.placeables.filter(
-      (t) => t.actor && t.actor.type == "character"
+      (t) => t.actor && (t.actor.type == "character" || t.actor.type == "char")
     );
   }
 
