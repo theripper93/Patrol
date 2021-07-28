@@ -105,30 +105,23 @@ Hooks.on("renderTokenConfig", (app, html, data) => {
   if (!game.user.isGM) return;
   let toggleHTML = `<div class="form-group">
   <label>${game.i18n.localize("patrol.tokenConfig.enablePatrol.name")}</label>
-  <input type="checkbox" name="enablePatrol" data-dtype="Boolean">
+  <input type="checkbox" name="flags.${MODULE_NAME_PATROL}.enablePatrol" data-dtype="Boolean">
 </div>
 <div class="form-group">
   <label>${game.i18n.localize("patrol.tokenConfig.enableSpotting.name")}</label>
-  <input type="checkbox" name="enableSpotting" data-dtype="Boolean">
+  <input type="checkbox" name="flags.${MODULE_NAME_PATROL}.enableSpotting" data-dtype="Boolean">
 </div>`;
   const lockrotation = html.find("input[name='lockRotation']");
   const formGroup = lockrotation.closest(".form-group");
   formGroup.after(toggleHTML);
-  html.find("input[name ='enablePatrol']")[0].checked =
+  html.find(`input[name ='flags.${MODULE_NAME_PATROL}.enablePatrol']`)[0].checked =
     app.object.getFlag(MODULE_NAME_PATROL, "enablePatrol") || false;
-    html.find("input[name ='enableSpotting']")[0].checked =
+    html.find(`input[name ='flags.${MODULE_NAME_PATROL}.enableSpotting']`)[0].checked =
     app.object.getFlag(MODULE_NAME_PATROL, "enableSpotting") || false;
   html.find($('button[name="submit"]')).click(app.object, saveTokenConfigPT);
 });
 
 async function saveTokenConfigPT(event) {
-  let html = this.offsetParent;
-  enablePatrol = html.querySelectorAll("input[name ='enablePatrol']")[0]
-    .checked;
-    enableSpotting = html.querySelectorAll("input[name ='enableSpotting']")[0]
-    .checked;
-  await event.data.setFlag(MODULE_NAME_PATROL, "enablePatrol", enablePatrol);
-  await event.data.setFlag(MODULE_NAME_PATROL, "enableSpotting", enableSpotting);
   _patrol.mapTokens();
 }
 
