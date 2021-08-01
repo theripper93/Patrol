@@ -196,7 +196,11 @@ class PathPatroller
                         //console.log("Removing path " + pathID + " from used list...");
                         let pathIndexToRemove;  
                         pathIndexToRemove = _pathPatrol.pathsInUse.indexOf(pathID);
-                        _pathPatrol.pathsInUse.splice(pathIndexToRemove, 1);
+                        if(pathIndexToRemove > -1)
+                        {
+                            _pathPatrol.pathsInUse.splice(pathIndexToRemove, 1);
+                        }
+                        
                         //console.log("Adding path " + nextPathID + " to used list...");
                         if(nextPathID != undefined)
                         {
