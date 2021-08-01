@@ -36,6 +36,8 @@ Please ensure that only one of the patrol types is checked in the token config.
 
 If the "Use Multiple Paths" checkbox is enabled in the token config, You can draw multiple paths with the same name. The token will randomly select one of the other paths with the same name when it has finished patrolling its current path. It will give preference to paths that are not currently being patrolled by any tokens. 
 
+It is often a good idea to hit the "Remap paths and Reset Nodes" button after making any changes to any paths or patrolling tokens. This will reset the token's path node to either 0, or to a random path and node within the group if the "Reset to Rnadom Node" is checked.
+
 **Auto Rotate**
 
 Patrol is compatible with the Auto Rotate module. Combine them for auto rotating patrols!
