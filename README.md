@@ -88,6 +88,6 @@ Hooks.on("patrolSpotted", (spotter, spotted) => {
 ![alt text](https://github.com/Vauryx/Patrol/blob/pathPatroller/wiki/Single_Path.gif)
 
 **Multiple Paths Use**
-![alt text](https://github.com/Vauryx/Patrol/blob/pathPatroller/wiki/Multi_Path.gif)
+![alt text](https://github.com/Vauryx/Patrol/blob/pathPatroller/wiki/Multi_path.gif)
 
 ![alt text](https://github.com/theripper93/Patrol/raw/main/wiki/patrolspot.jpg)
