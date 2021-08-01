@@ -56,6 +56,7 @@ If patrol is not working, check this steps before opening an issue:
 * If you create a combat encounter the patrol will stop
 * If you have the game paused, the patrol will stop
 * If you haven't toggled the patrol button the patrol will not start
+* If path patrol mode tokens will not spot players
 
 **Module\System\Macro Integration**
 
