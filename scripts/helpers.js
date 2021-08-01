@@ -87,7 +87,16 @@ async function _patrolAnimateMovement(ray) {
   const s = canvas.dimensions.size;
   this._movement = ray;
   const speed = s * 10;
-  const duration = game.settings.get(MODULE_NAME_PATROL, "patrolSmooth") && this.document.getFlag(MODULE_NAME_PATROL, "enablePatrol") && !this._controlled ? game.settings.get(MODULE_NAME_PATROL, "patrolDelay") : (ray.distance * 1000) / speed;
+  let animSpeed;
+  if(this.document.getFlag(MODULE_NAME_PATROL, "makePatroller"))
+  {
+    animSpeed = game.settings.get(MODULE_NAME_PATROL, "pathPatrolDelay");
+  }
+  else if(this.document.getFlag(MODULE_NAME_PATROL, "enablePatrol"))
+  {
+    animeSpeed = game.settings.get(MODULE_NAME_PATROL, "patrolDelay");
+  }
+  const duration = game.settings.get(MODULE_NAME_PATROL, "patrolSmooth") && (this.document.getFlag(MODULE_NAME_PATROL, "enablePatrol") || this.document.getFlag(MODULE_NAME_PATROL, "makePatroller")) && !this._controlled ? animSpeed : (ray.distance * 1000) / speed;
 
   // Define attributes
   const attributes = [
@@ -117,3 +126,4 @@ async function _patrolAnimateMovement(ray) {
   if ( !config.animate ) this._animatePerceptionFrame({source: config.source, sound: config.sound});
   this._movement = null;
 }
+

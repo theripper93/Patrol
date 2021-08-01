@@ -26,7 +26,8 @@
         "./scripts/main.js",
         "./scripts/patrol.js",
         "./scripts/helpers.js",
-        "./scripts/config.js"
+        "./scripts/config.js",
+        "./scripts/pathPatroller.js"
     ],
     "socket": true,
     "minimumCoreVersion": "0.8.6",
