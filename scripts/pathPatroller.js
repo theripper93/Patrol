@@ -39,7 +39,7 @@ class PathPatroller
             if (this.pathCoords != undefined)
             {
                 let pathName = token.tokenDocument.document.getFlag(MODULE_NAME_PATROL, "patrolPathName");
-                let patrolPathGroup = canvas.drawings.placeables.filter((d) => d.data.text.includes(pathName));
+                let patrolPathGroup = canvas.drawings.placeables.filter((d) => d.data.text?.includes(pathName));
                 let patrolPathIndex = Math.floor(Math.random() * patrolPathGroup.length);
                 if(patrolPathGroup[patrolPathIndex] != undefined)
                 {
@@ -109,7 +109,7 @@ class PathPatroller
                         isMultiPath = true;
                         patrolPathGroup = canvas.drawings.placeables.filter((d) => 
                         {
-                            if(d.data.text == pathName)
+                            if(d.data?.text == pathName)
                             {
                                 return d;
                             }
@@ -244,7 +244,7 @@ class PathPatroller
 
         console.log("Mapping Paths");
         this.pathCoords = [];
-        canvas.drawings.placeables.filter((d) => d.data.text.includes("Path")).forEach((path)=> {
+        canvas.drawings.placeables.filter((d) => d.data.text?.includes("Path")).forEach((path)=> {
             let pathPoints = this.polygonToGlobal(path);
             for(let currPointIndex = 0; currPointIndex < pathPoints.length-1; currPointIndex+=2)
             {
