@@ -26,9 +26,10 @@ Automatic Patrol Routes for NPCs
 
 You can have a token patrol a specific area by drawing a Polygon or Rectangle (other shapes are not supported) and in it's text property call it "Patrol" (upper case P). Any token in that area will patrol only inside that area
 
-You can also draw a Polygon or Rectangle, and in it's text property include the word "Path" (upper case P). You may add to the word, but it must include the word "Path" somewhere. (eg. GuardPathA, GuardPathB).  
+You can also draw a Polygon or Rectangle, and in it's text property include the word "Path" (upper case P) to select the drawing as a path for patrolling tokens. You may add to the word, but it must include the word "Path" somewhere. (eg. GuardPathA, GuardPathB). A token set to patrol a path will reset back to the begginning of the path once it has finished unless "Use Multiple Paths" is checked. 
 
 **Using Multiple Paths**
+
 If the "Use Multiple Paths" checkbox is enabled in the token config, You can draw multiple paths with the same name. The token will randomly select one of the other paths with the same name when it has finished patrolling its current path. It will give preference to paths that are not currently being patrolled by any tokens. 
 
 **Auto Rotate**
