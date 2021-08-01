@@ -5,11 +5,11 @@ Automatic Patrol Routes for NPCs
 
 **Patrol Options**:
 
-* **Enable Random Patrol:** If enabled the token will patrol randomly
+* **Enable Random Patrol:** If enabled the token will patrol randomly **THIS OPTION IS MUTUALLY EXCLUSIVE TO "Enable Path patrol"**
 
 * **Spot Player Characters:** If enabled the token will spot player characters, pausing the game and panning on the token when spotting
 
-* **Enable Path Patrol:** If enabled the token will follow the given path/paths
+* **Enable Path Patrol:** If enabled the token will follow the given path/paths **THIS OPTION IS MUTUALLY EXCLUSIVE TO "Enable Random patrol"**
 
 * **Use Multiple paths:** If enabled the token will use multiple paths
 
@@ -27,6 +27,8 @@ Automatic Patrol Routes for NPCs
 You can have a token patrol a specific area by drawing a Polygon or Rectangle (other shapes are not supported) and in it's text property call it "Patrol" (upper case P). Any token in that area will patrol only inside that area
 
 You can also draw a Polygon or Rectangle, and in it's text property include the word "Path" (upper case P) to select the drawing as a path for patrolling tokens. You may add to the word, but it must include the word "Path" somewhere. (eg. GuardPathA, GuardPathB). A token set to patrol a path will reset back to the begginning of the path once it has finished unless "Use Multiple Paths" is checked. 
+
+Please ensure that only one of the patrol types is checked in the token config.
 
 **Using Multiple Paths**
 
