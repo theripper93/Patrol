@@ -5,11 +5,13 @@ Automatic Patrol Routes for NPCs
 
 **Patrol Options**:
 
-* **Enable Random Patrol:** If enabled the token will patrol randomly **THIS OPTION IS MUTUALLY EXCLUSIVE TO "Enable Path patrol"**
+* **Enable Random Patrol:** If enabled the token will patrol randomly 
+>> **THIS OPTION IS MUTUALLY EXCLUSIVE TO "Enable Path patrol"**
 
 * **Spot Player Characters:** If enabled the token will spot player characters, pausing the game and panning on the token when spotting
 
-* **Enable Path Patrol:** If enabled the token will follow the given path/paths **THIS OPTION IS MUTUALLY EXCLUSIVE TO "Enable Random patrol"**
+* **Enable Path Patrol:** If enabled the token will follow the given path/paths 
+>> **THIS OPTION IS MUTUALLY EXCLUSIVE TO "Enable Random patrol"**
 
 * **Use Multiple paths:** If enabled the token will use multiple paths
 
