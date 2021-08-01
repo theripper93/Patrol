@@ -32,11 +32,17 @@ You can also draw a Polygon or Rectangle, and in it's text property include the 
 
 Please ensure that only one of the patrol types is checked in the token config.
 
+**Single Path Use**
+![alt text](https://github.com/Vauryx/Patrol/blob/pathPatroller/wiki/Single_Path.gif)
+
 **Using Multiple Paths**
 
 If the "Use Multiple Paths" checkbox is enabled in the token config, You can draw multiple paths with the same name. The token will randomly select one of the other paths with the same name when it has finished patrolling its current path. It will give preference to paths that are not currently being patrolled by any tokens. 
 
 It is often a good idea to hit the "Remap paths and Reset Nodes" button after making any changes to any paths or patrolling tokens. This will reset the token's path node to either 0, or to a random path and node within the group if the "Reset to Random Node" is checked.
+
+**Multiple Paths Use**
+![alt text](https://github.com/Vauryx/Patrol/blob/pathPatroller/wiki/Multi_path.gif)
 
 **Auto Rotate**
 
@@ -83,11 +89,5 @@ Hooks.on("patrolSpotted", (spotter, spotted) => {
 **Patrol Token Config**
 
 ![alt text](https://github.com/Vauryx/Patrol/blob/pathPatroller/wiki/patrolconfig.jpg)
-
-**Single Path Use**
-![alt text](https://github.com/Vauryx/Patrol/blob/pathPatroller/wiki/Single_Path.gif)
-
-**Multiple Paths Use**
-![alt text](https://github.com/Vauryx/Patrol/blob/pathPatroller/wiki/Multi_path.gif)
 
 ![alt text](https://github.com/theripper93/Patrol/raw/main/wiki/patrolspot.jpg)

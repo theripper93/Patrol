@@ -183,7 +183,7 @@ Hooks.on("renderTokenConfig", (app, html, data) => {
 
 async function saveTokenConfigPT(event) {
   _patrol.mapTokens();
-  _pathPatrol.mapTokensAndPaths();
+  
   if(event.data.getFlag(MODULE_NAME_PATROL, "makePatroller"))
   {
     //console.log(event.data);
@@ -209,7 +209,7 @@ async function saveTokenConfigPT(event) {
     }
     await event.data.setFlag(MODULE_NAME_PATROL, "pathID", pathID);
   }
-  
+  _pathPatrol.mapTokensAndPaths();
 }
 
 Hooks.on("createDrawing", () => {
