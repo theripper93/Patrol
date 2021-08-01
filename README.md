@@ -5,9 +5,19 @@ Automatic Patrol Routes for NPCs
 
 **Patrol Options**:
 
-* **Enable Patrol:** If enabled the token will patrol
+* **Enable Random Patrol:** If enabled the token will patrol randomly 
+> **THIS OPTION IS MUTUALLY EXCLUSIVE TO "Enable Path patrol"**
 
 * **Spot Player Characters:** If enabled the token will spot player characters, pausing the game and panning on the token when spotting
+
+* **Enable Path Patrol:** If enabled the token will follow the given path/paths 
+> **THIS OPTION IS MUTUALLY EXCLUSIVE TO "Enable Random patrol"**
+
+* **Use Multiple paths:** If enabled the token will use multiple paths
+
+* **Patrol Path:** The name of the path/s that the token will follow if patrolling paths
+
+* **Path Node:** The node of the path at which the token is currently on. This setting can be changed to start tokens mid-way through paths.
 
 **Alerting**:
 
@@ -16,7 +26,23 @@ Automatic Patrol Routes for NPCs
 
 **Custom Patrols**
 
-You can have a token patrol a specific area by drawing a Polygon or Rectangle (other shapes are not supported) and in it's text propriety call it "Patrol" (upper case P). Any token in that area will patrol only inside that area
+You can have a token patrol a specific area by drawing a Polygon or Rectangle (other shapes are not supported) and in it's text property call it "Patrol" (upper case P). Any token in that area will patrol only inside that area
+
+You can also draw a Polygon or Rectangle, and in it's text property include the word "Path" (upper case P) to select the drawing as a path for patrolling tokens. You may add to the word, but it must include the word "Path" somewhere. (eg. GuardPathA, GuardPathB). A token set to patrol a path will reset back to the begginning of the path once it has finished unless "Use Multiple Paths" is checked. 
+
+Please ensure that only one of the patrol types is checked in the token config.
+
+**Single Path Use**
+![alt text](https://github.com/Vauryx/Patrol/blob/pathPatroller/wiki/Single_Path.gif)
+
+**Using Multiple Paths**
+
+If the "Use Multiple Paths" checkbox is enabled in the token config, You can draw multiple paths with the same name. The token will randomly select one of the other paths with the same name when it has finished patrolling its current path. It will give preference to paths that are not currently being patrolled by any tokens. 
+
+It is often a good idea to hit the "Remap paths and Reset Nodes" button after making any changes to any paths or patrolling tokens. This will reset the token's path node to either 0, or to a random path and node within the group if the "Reset to Random Node" is checked.
+
+**Multiple Paths Use**
+![alt text](https://github.com/Vauryx/Patrol/blob/pathPatroller/wiki/Multi_path.gif)
 
 **Auto Rotate**
 
@@ -62,7 +88,6 @@ Hooks.on("patrolSpotted", (spotter, spotted) => {
 
 **Patrol Token Config**
 
-![alt text](https://github.com/theripper93/Patrol/raw/main/wiki/patrolconfig.jpg)
-
+![alt text](https://github.com/Vauryx/Patrol/blob/pathPatroller/wiki/patrolconfig.jpg)
 
 ![alt text](https://github.com/theripper93/Patrol/raw/main/wiki/patrolspot.jpg)
