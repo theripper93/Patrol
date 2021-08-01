@@ -183,11 +183,18 @@ Hooks.on("renderTokenConfig", (app, html, data) => {
 
 async function saveTokenConfigPT(event) {
   _patrol.mapTokens();
+  _pathPatrol.mapTokensAndPaths();
   if(event.data.getFlag(MODULE_NAME_PATROL, "makePatroller"))
   {
+    //console.log(event.data);
     let pathName = event.data.getFlag(MODULE_NAME_PATROL, "patrolPathName");
     let multiPath = event.data.getFlag(MODULE_NAME_PATROL, "multiPath");
-    let pathGroup = canvas.drawings.placeables.filter((d) => d.data.text.includes(pathName));
+    let pathGroup = canvas.drawings.placeables.filter((d) => 
+    {if(d.data.text == pathName)
+      {
+          return d;
+      }
+    });
     let pathID = "";
     if (pathGroup[0] != undefined)
     {
@@ -202,7 +209,7 @@ async function saveTokenConfigPT(event) {
     }
     await event.data.setFlag(MODULE_NAME_PATROL, "pathID", pathID);
   }
-  _pathPatrol.mapTokensAndPaths();
+  
 }
 
 Hooks.on("createDrawing", () => {

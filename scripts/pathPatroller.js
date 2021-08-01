@@ -91,6 +91,7 @@ class PathPatroller
             let nextPathID = "";
             for (let token of _pathPatrol.tokens) 
             {
+                patrolPathGroup = [];
                 name = token.tokenDocument.data.name;
                 id = token.tokenDocument.id;
                 isMultiPath = false;
@@ -106,7 +107,14 @@ class PathPatroller
                     if(token.tokenDocument.document.getFlag(MODULE_NAME_PATROL, "multiPath"))
                     {
                         isMultiPath = true;
-                        patrolPathGroup = canvas.drawings.placeables.filter((d) => d.data.text.includes(pathName));
+                        patrolPathGroup = canvas.drawings.placeables.filter((d) => 
+                        {
+                            if(d.data.text == pathName)
+                            {
+                                return d;
+                            }
+                            
+                        });
                     }
                     
                     pathID = token.tokenDocument.document.getFlag(MODULE_NAME_PATROL, "pathID");
@@ -124,17 +132,19 @@ class PathPatroller
                 console.log("pathID: " + pathID);
                 console.log("patrolPath: ");
                 console.log(patrolPath);
-                console.log("Moving from {x: " + token.tokenDocument.data.x + ", y: " + token.tokenDocument.data.y + "} to {x: " + patrolPath[currentPathIndex].x
-                                + ", y: " + patrolPath[currentPathIndex].y + "}");*/
-                if(patrolPath[currentPathIndex] != undefined)
+                console.log("patrolPathGroup: ");
+                console.log(patrolPathGroup);*/
+                if(patrolPath[0] != undefined)
                 {
+                   // console.log("Moving from {x: " + token.tokenDocument.data.x + ", y: " + token.tokenDocument.data.y + "} to {x: " + patrolPath[currentPathIndex].x
+                    //            + ", y: " + patrolPath[currentPathIndex].y + "}");
                     updates.push({
                         _id: token.tokenDocument.document.id,
                         x: patrolPath[currentPathIndex].x,
                         y: patrolPath[currentPathIndex].y,
                     });
-                }
                 
+                }
                 if (currentPathIndex >= patrolPath.length-1)
                 {
                     //console.log("Moved to last node - resetting...")
@@ -184,16 +194,11 @@ class PathPatroller
                         //console.log("Paths currently in use: ");
                         //console.log(_pathPatrol.pathsInUse);
                         //console.log("Removing path " + pathID + " from used list...");
-                        let pathIndexToRemove;
-                        while(_pathPatrol.pathsInUse.includes(pathID))
-                        {
-                            pathIndexToRemove = _pathPatrol.pathsInUse.indexOf(pathID);
-                            _pathPatrol.pathsInUse.splice(pathIndexToRemove, 1);
-                        }
-            
-                        
+                        let pathIndexToRemove;  
+                        pathIndexToRemove = _pathPatrol.pathsInUse.indexOf(pathID);
+                        _pathPatrol.pathsInUse.splice(pathIndexToRemove, 1);
                         //console.log("Adding path " + nextPathID + " to used list...");
-                        if(!_pathPatrol.pathsInUse.includes(nextPathID))
+                        if(nextPathID != undefined)
                         {
                             _pathPatrol.pathsInUse.push(nextPathID);
                         }
@@ -227,7 +232,7 @@ class PathPatroller
             this.tokens.push({tokenDocument: t});
             let pathID = t.document.getFlag(MODULE_NAME_PATROL, "pathID");
 
-            if(!this.pathsInUse.includes(pathID))
+            if(pathID != undefined)
             {
                 this.pathsInUse.push(pathID);
             }
