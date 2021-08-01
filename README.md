@@ -82,7 +82,7 @@ Hooks.on("patrolSpotted", (spotter, spotted) => {
 
 **Patrol Token Config**
 
-![alt text](https://github.com/theripper93/Patrol/raw/main/wiki/patrolconfig.jpg)
+![alt text](https://github.com/Vauryx/Patrol/blob/pathPatroller/wiki/patrolconfig.jpg)
 
 **Single Path Use**
 ![alt text](https://github.com/Vauryx/Patrol/blob/pathPatroller/wiki/Single_Path.gif)
