@@ -178,39 +178,7 @@ Hooks.on("renderTokenConfig", (app, html, data) => {
     app.object.getFlag(MODULE_NAME_PATROL, "patrolPathName") || "";
   html.find(`input[name = 'flags.${MODULE_NAME_PATROL}.pathNodeIndex']`)[0].value = 
     app.object.getFlag(MODULE_NAME_PATROL, "pathNodeIndex") || 0;
-  html.find($('button[name="submit"]')).click(app.object, saveTokenConfigPT);
 });
-
-async function saveTokenConfigPT(event) {
-  _patrol.mapTokens();
-  
-  if(event.data.getFlag(MODULE_NAME_PATROL, "makePatroller"))
-  {
-    //console.log(event.data);
-    let pathName = event.data.getFlag(MODULE_NAME_PATROL, "patrolPathName");
-    let multiPath = event.data.getFlag(MODULE_NAME_PATROL, "multiPath");
-    let pathGroup = canvas.drawings.placeables.filter((d) => 
-    {if(d.data.text == pathName)
-      {
-          return d;
-      }
-    });
-    let pathID = "";
-    if (pathGroup[0] != undefined)
-    {
-      if (multiPath)
-      {
-        pathID = pathGroup[Math.floor(Math.random() * pathGroup.length)].id;
-      }
-      else
-      {
-        pathID = pathGroup[0].id;
-      }
-    }
-    await event.data.setFlag(MODULE_NAME_PATROL, "pathID", pathID);
-  }
-  _pathPatrol.mapTokensAndPaths();
-}
 
 Hooks.on("createDrawing", () => {
   if(game.user.isGM) 
@@ -248,6 +216,41 @@ Hooks.on("createToken", () => {
 Hooks.on("deleteToken", () => {
   if(game.user.isGM) 
   {
+    _patrol.mapTokens();
+    _pathPatrol.mapTokensAndPaths();
+  }
+});
+
+Hooks.on("updateToken", async (tokend,updates) => {
+  if(game.user.isGM && updates.flags?.patrol && updates.flags.patrol.pathNodeIndex == undefined) 
+  {
+    let token = canvas.tokens.get(tokend.id);
+    if(token.document.getFlag(MODULE_NAME_PATROL, "makePatroller"))
+    {
+      //console.log(event.data);
+      let pathName = token.document.getFlag(MODULE_NAME_PATROL, "patrolPathName");
+      let multiPath = token.document.getFlag(MODULE_NAME_PATROL, "multiPath");
+      let pathGroup = canvas.drawings.placeables.filter((d) => 
+      {if(d.data.text == pathName)
+        {
+            return d;
+        }
+      });
+      let pathID = "";
+      if (pathGroup[0] != undefined)
+      {
+        if (multiPath)
+        {
+          pathID = pathGroup[Math.floor(Math.random() * pathGroup.length)].id;
+        }
+        else
+        {
+          pathID = pathGroup[0].id;
+        }
+      }
+      await token.document.setFlag(MODULE_NAME_PATROL, "pathID", pathID);
+    }
+    _pathPatrol.mapTokensAndPaths();
     _patrol.mapTokens();
     _pathPatrol.mapTokensAndPaths();
   }
