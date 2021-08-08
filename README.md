@@ -30,6 +30,8 @@ You can have a token patrol a specific area by drawing a Polygon or Rectangle (o
 
 You can also draw a Polygon or Rectangle, and in it's text property include the word "Path" (upper case P) to select the drawing as a path for patrolling tokens. You may add to the word, but it must include the word "Path" somewhere. (eg. GuardPathA, GuardPathB). A token set to patrol a path will reset back to the begginning of the path once it has finished unless "Use Multiple Paths" is checked. 
 
+The speed for tokens patrolling paths will be determined by the "Patrol speed for paths(ms)" module setting. This setting defines how long it will take every token patrolling a path to arrive at the next node. Thus, the actual animation speed will depend on the distance from the current node to the next one. This means that tokens can "speed up" mid path by drawing longer nodes or "slow down" by drawing shorter nodes.
+
 Please ensure that only one of the patrol types is checked in the token config.
 
 **Single Path Use**

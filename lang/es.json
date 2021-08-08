@@ -8,14 +8,22 @@
     "patrol.settings.patrolSmooth.hint": "Los iconos de patrulla se moverán con mayor fluidez, aunque puede causar algunos desajustes en la rejilla al detectar",
     "patrol.settings.patrolDelay.name": "Retraso de la patrulla (ms)",
     "patrol.settings.patrolDelay.hint": "Retraso en milisegundos antes de computar cada ruta (por defecto: 2500)",
+    "patrol.settings.pathPatrolDelay.name": "Velocidad de la patrulla (ms)",
+    "patrol.settings.pathPatrolDelay.hint": "Tiempo que tarda cada icono en la ruta en llegar al siguiente nodo (por defecto: 2500)",
     "patrol.settings.patrolAlertDelay.name": "Retraso de alerta (ms)",
     "patrol.settings.patrolAlertDelay.hint": "Retraso en milisegundos antes de que un enemigo en alerta detecte a un personaje (por defecto: 5000). Configure a 0 si no quiere establecer ningún periodo de alerta",
     "patrol.settings.patrolAlert.name": "Efecto de sonido de alerta",
     "patrol.settings.patrolAlert.hint": "Sonido que desea reproducir cuando un enemigo se ponga en alerta debido a un personaje",
     "patrol.settings.patrolSound.name": "Efecto de sonido de detectado",
     "patrol.settings.patrolSound.hint": "Sonido que desea reproducir cuando un icono sea detectado por un enemigo",
+    "patrol.settings.resetToRandomNode.name": "Reiniciar a nodo aleatorio",
+    "patrol.settings.resetToRandomNode.hint": "Al crear o borrar dibujos, reiniciar la ruta del nodo a 0, o elegir uno al azar del grupo",
     "patrol.tokenConfig.enablePatrol.name": "Habilitar Patrol (Patrulla)",
     "patrol.tokenConfig.enableSpotting.name": "Detectar personajes jugadores",
-    "patrol.tools.patrolToggle.hint": "Conmutar patrulla"
-
+    "patrol.tools.patrolToggle.hint": "Conmutar patrulla",
+    "patrol.tools.remapPatrolPaths.hint": "Remapear rutas y reiniciar nodos",
+    "patrol.tokenConfig.multiPath.name": "Usar rutas múltiples",
+    "patrol.tokenConfig.makePatroller.name": "Habilitar ruta de patrulla",
+    "patrol.tokenConfig.patrolPathName.name": "Nombre de la ruta de patrulla",
+    "patrol.tokenConfig.pathNodeIndex.name": "Nodo de ruta"
 }
