@@ -222,7 +222,7 @@ Hooks.on("deleteToken", () => {
 });
 
 Hooks.on("updateToken", async (tokend,updates) => {
-  if(game.user.isGM && updates.flags?.patrol && updates.flags.patrol.pathNodeIndex == undefined) 
+  if(game.user.isGM && updates.flags?.patrol && (updates.flags.patrol.pathNodeIndex == undefined || updates.flags.patrol.pathID == undefined)) 
   {
     let token = canvas.tokens.get(tokend.id);
     if(token.document.getFlag(MODULE_NAME_PATROL, "makePatroller"))
