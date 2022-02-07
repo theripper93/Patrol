@@ -14,6 +14,7 @@ class Patrol {
   }
 
   mapTokens() {
+    if(this.tokens.some(token=>token.alerted || token.alertTimedOut)) return;
     let patrolDrawings = canvas.drawings.placeables.filter(
       (d) => d.data.text == "Patrol");
     this.tokens = [];
