@@ -167,17 +167,17 @@ Hooks.on("renderTokenConfig", (app, html, data) => {
   const formGroup = lockrotation.closest(".form-group");
   formGroup.after(toggleHTML);
   html.find(`input[name ='flags.${MODULE_NAME_PATROL}.enablePatrol']`)[0].checked =
-    app.object.getFlag(MODULE_NAME_PATROL, "enablePatrol") || false;
+    app.token.getFlag(MODULE_NAME_PATROL, "enablePatrol") || false;
   html.find(`input[name ='flags.${MODULE_NAME_PATROL}.enableSpotting']`)[0].checked =
-    app.object.getFlag(MODULE_NAME_PATROL, "enableSpotting") || false;
+    app.token.getFlag(MODULE_NAME_PATROL, "enableSpotting") || false;
   html.find(`input[name ='flags.${MODULE_NAME_PATROL}.makePatroller']`)[0].checked = 
-    app.object.getFlag(MODULE_NAME_PATROL, "makePatroller") || false;
+    app.token.getFlag(MODULE_NAME_PATROL, "makePatroller") || false;
   html.find(`input[name ='flags.${MODULE_NAME_PATROL}.multiPath']`)[0].checked = 
-    app.object.getFlag(MODULE_NAME_PATROL, "multiPath") || false;
+    app.token.getFlag(MODULE_NAME_PATROL, "multiPath") || false;
   html.find(`input[name = 'flags.${MODULE_NAME_PATROL}.patrolPathName']`)[0].value = 
-    app.object.getFlag(MODULE_NAME_PATROL, "patrolPathName") || "";
+    app.token.getFlag(MODULE_NAME_PATROL, "patrolPathName") || "";
   html.find(`input[name = 'flags.${MODULE_NAME_PATROL}.pathNodeIndex']`)[0].value = 
-    app.object.getFlag(MODULE_NAME_PATROL, "pathNodeIndex") || 0;
+    app.token.getFlag(MODULE_NAME_PATROL, "pathNodeIndex") || 0;
 });
 
 Hooks.on("createDrawing", () => {
