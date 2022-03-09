@@ -230,7 +230,6 @@ class PathPatroller
 
     mapTokensAndPaths() 
     {
-        console.log("Mapping tokens");   
         this.pathsInUse = [];  
         this.tokens = [];
         canvas.tokens.placeables.filter((t) => t.document.getFlag(MODULE_NAME_PATROL, "makePatroller")).forEach((t) => {
@@ -243,7 +242,6 @@ class PathPatroller
             }
         });
 
-        console.log("Mapping Paths");
         this.pathCoords = [];
         canvas.drawings.placeables.filter((d) => d.data.text?.includes("Path")).forEach((path)=> {
             let pathPoints = this.polygonToGlobal(path);
