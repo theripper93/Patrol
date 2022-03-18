@@ -94,7 +94,7 @@ async function _patrolAnimateMovement(ray) {
   }
   else if(this.document.getFlag(MODULE_NAME_PATROL, "enablePatrol"))
   {
-    animeSpeed = game.settings.get(MODULE_NAME_PATROL, "patrolDelay");
+    animSpeed = game.settings.get(MODULE_NAME_PATROL, "patrolDelay");
   }
   const duration = game.settings.get(MODULE_NAME_PATROL, "patrolSmooth") && (this.document.getFlag(MODULE_NAME_PATROL, "enablePatrol") || this.document.getFlag(MODULE_NAME_PATROL, "makePatroller")) && !this._controlled ? animSpeed : (ray.distance * 1000) / speed;
 
