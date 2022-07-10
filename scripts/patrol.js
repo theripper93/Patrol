@@ -16,7 +16,7 @@ class Patrol {
   mapTokens() {
     if(this.tokens.some(token=>token.alerted || token.alertTimedOut)) return;
     let patrolDrawings = canvas.drawings.placeables.filter(
-      (d) => d.data.text == "Patrol");
+      (d) => d.document.text == "Patrol");
     this.tokens = [];
     canvas.tokens.placeables
       .filter((t) => t.document.getFlag(MODULE_NAME_PATROL, "enablePatrol") && !t.actor?.effects?.find(e => e.getFlag("core", "statusId") === CONFIG.Combat.defeatedStatusId))
@@ -87,7 +87,7 @@ class Patrol {
             //occupiedPositions.push(`${token.tokenDocument.x}-${token.tokenDocument.y}`)
             continue;
         }
-        if (token.tokenDocument._controlled) continue;
+        if (token.tokenDocument.controlled) continue;
         let validPositions = _patrol.getValidPositions(token,occupiedPositions);
         let newPosition =
           validPositions[
@@ -206,8 +206,8 @@ class Patrol {
 
   adjustPolygonPoints(drawing) {
     let globalPoints = [];
-    if (drawing.data.points.length != 0) {
-      drawing.data.points.forEach((p) => {
+    if (drawing.document.points.length != 0) {
+      drawing.document.points.forEach((p) => {
         globalPoints.push(p[0] + drawing.x, p[1] + drawing.y);
       });
     } else {
@@ -226,12 +226,9 @@ class Patrol {
   }
 
   detectPlayer(token,preventEvent=false) {
-    let maxDistance = canvas.scene.data.globalLight
+    let maxDistance = canvas.lighting.globalLight
       ? 1000
-      : Math.max(
-          token.tokenDocument.data.dimSight,
-          token.tokenDocument.data.brightSight
-        );
+      : token.tokenDocument.document.sight.range
     for (let char of this.characters) {
       if (
         canvas.grid.measureDistance(token.tokenDocument.center, char.center) <=

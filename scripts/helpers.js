@@ -18,23 +18,22 @@ async function patrolSpotted(tokenId) {
   let exclamationMark = new PIXI.Text("!", {
     fontFamily: "Impact",
     strokeThickness: 6,
-    fontSize: 128*enemyToken.data.height,
+    fontSize: 128*enemyToken.document.height,
     fill: 0xff0000,
     align: "center",
   });
   let g = new PIXI.Graphics();
   g.addChild(exclamationMark);
   g.x =
-    enemyToken.x +
-    (enemyToken.data.width * canvas.scene.dimensions.size) / 2 -
-    g.width / 2;
-  g.y = enemyToken.y - g.height / 2;
-  canvas.foreground.addChild(g);
+  (enemyToken.document.width * canvas.scene.dimensions.size) / 2 -
+  g.width / 2;
+g.y = - g.height / 2;
+enemyToken.addChild(g);
   setTimeout(() => {
     canvas.app.ticker.add(fade);
   }, 4000);
   setTimeout(() => {
-    canvas.foreground.removeChild(g);
+    enemyToken.removeChild(g);
     canvas.app.ticker.remove(fade);
   }, 5000);
 
@@ -57,7 +56,7 @@ async function patrolAlerted(tokenId) {
   let exclamationMark = new PIXI.Text("?", {
     fontFamily: "Impact",
     strokeThickness: 6,
-    fontSize: 64*enemyToken.data.height,
+    fontSize: 64*enemyToken.document.height,
     fill: 0xfff200,
     align: "center",
   });
@@ -65,7 +64,7 @@ async function patrolAlerted(tokenId) {
   let g = new PIXI.Graphics();
   g.addChild(exclamationMark);
   g.x =
-    (enemyToken.data.width * canvas.scene.dimensions.size) / 2 -
+    (enemyToken.document.width * canvas.scene.dimensions.size) / 2 -
     g.width / 2;
   g.y = - g.height / 2;
   enemyToken.addChild(g);
@@ -96,7 +95,7 @@ async function _patrolAnimateMovement(ray) {
   {
     animeSpeed = game.settings.get(MODULE_NAME_PATROL, "patrolDelay");
   }
-  const duration = game.settings.get(MODULE_NAME_PATROL, "patrolSmooth") && (this.document.getFlag(MODULE_NAME_PATROL, "enablePatrol") || this.document.getFlag(MODULE_NAME_PATROL, "makePatroller")) && !this._controlled ? animSpeed : (ray.distance * 1000) / speed;
+  const duration = game.settings.get(MODULE_NAME_PATROL, "patrolSmooth") && (this.document.getFlag(MODULE_NAME_PATROL, "enablePatrol") || this.document.getFlag(MODULE_NAME_PATROL, "makePatroller")) && !this.controlled ? animSpeed : (ray.distance * 1000) / speed;
 
   // Define attributes
   const attributes = [
@@ -109,8 +108,8 @@ async function _patrolAnimateMovement(ray) {
   const config = {
     animate: game.settings.get("core", "visionAnimation"),
     source: this._isVisionSource() || emits,
-    sound: this._controlled || this.observer,
-    fog: emits && !this._controlled && (canvas.sight.sources.size > 0)
+    sound: this.controlled || this.observer,
+    fog: emits && !this.controlled && (canvas.sight.sources.size > 0)
   }
 
   // Dispatch the animation function

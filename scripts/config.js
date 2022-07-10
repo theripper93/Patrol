@@ -50,14 +50,14 @@ Hooks.on("init", () => {
     },
   });
 
-  game.settings.register(MODULE_NAME_PATROL, "patrolSmooth", {
+  /*game.settings.register(MODULE_NAME_PATROL, "patrolSmooth", {
     name: game.i18n.localize("patrol.settings.patrolSmooth.name"),
     hint: game.i18n.localize("patrol.settings.patrolSmooth.hint"),
     scope: "world",
     config: true,
     type: Boolean,
     default: true,
-  });
+  });*/
 
   game.settings.register(MODULE_NAME_PATROL, "patrolDelay", {
     name: game.i18n.localize("patrol.settings.patrolDelay.name"),
@@ -136,7 +136,7 @@ Hooks.on("init", () => {
     default: false
   });
 
-  libWrapper.register(MODULE_NAME_PATROL,"Token.prototype.animateMovement", _patrolAnimateMovement, "OVERRIDE")
+  //libWrapper.register(MODULE_NAME_PATROL,"Token.prototype.animateMovement", _patrolAnimateMovement, "OVERRIDE")
 
 });
 
@@ -231,7 +231,7 @@ Hooks.on("updateToken", async (tokend,updates) => {
       let pathName = token.document.getFlag(MODULE_NAME_PATROL, "patrolPathName");
       let multiPath = token.document.getFlag(MODULE_NAME_PATROL, "multiPath");
       let pathGroup = canvas.drawings.placeables.filter((d) => 
-      {if(d.data.text == pathName)
+      {if(d.document.text == pathName)
         {
             return d;
         }

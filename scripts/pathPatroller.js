@@ -39,7 +39,7 @@ class PathPatroller
             if (this.pathCoords != undefined)
             {
                 let pathName = token.tokenDocument.document.getFlag(MODULE_NAME_PATROL, "patrolPathName");
-                let patrolPathGroup = canvas.drawings.placeables.filter((d) => d.data.text?.includes(pathName));
+                let patrolPathGroup = canvas.drawings.placeables.filter((d) => d.document.text?.includes(pathName));
                 let patrolPathIndex = Math.floor(Math.random() * patrolPathGroup.length);
                 if(patrolPathGroup[patrolPathIndex] != undefined)
                 {
@@ -93,11 +93,11 @@ class PathPatroller
             {
                 if(token?.tokenDocument?.actor?.effects?.find(e => e.getFlag("core", "statusId") === CONFIG.Combat.defeatedStatusId)) continue;
                 patrolPathGroup = [];
-                name = token.tokenDocument.data.name;
+                name = token.tokenDocument.document.name;
                 id = token.tokenDocument.id;
-                isMultiPath = false;
+                isMultiPath = false; 
                 currentPathIndex = await Number(token.tokenDocument.document.getFlag(MODULE_NAME_PATROL, "pathNodeIndex")); 
-                if (token.tokenDocument._controlled) 
+                if (token.tokenDocument.controlled) 
                 {
                     continue;
                 }
@@ -127,18 +127,8 @@ class PathPatroller
                         }
                     });
                 }
-                /*console.log("Starting log for " + name + " with id - " + id + " ---------------------------------------------------");
-                console.log("currentPathIndex: " + currentPathIndex);
-                console.log("pathName: " + pathName);
-                console.log("pathID: " + pathID);
-                console.log("patrolPath: ");
-                console.log(patrolPath);
-                console.log("patrolPathGroup: ");
-                console.log(patrolPathGroup);*/
                 if(patrolPath[0] != undefined)
                 {
-                   // console.log("Moving from {x: " + token.tokenDocument.data.x + ", y: " + token.tokenDocument.data.y + "} to {x: " + patrolPath[currentPathIndex].x
-                    //            + ", y: " + patrolPath[currentPathIndex].y + "}");
                     updates.push({
                         _id: token.tokenDocument.document.id,
                         x: patrolPath[currentPathIndex].x,
@@ -245,7 +235,7 @@ class PathPatroller
 
         console.log("Mapping Paths");
         this.pathCoords = [];
-        canvas.drawings.placeables.filter((d) => d.data.text?.includes("Path")).forEach((path)=> {
+        canvas.drawings.placeables.filter((d) => d.document.text?.includes("Path")).forEach((path)=> {
             let pathPoints = this.polygonToGlobal(path);
             for(let currPointIndex = 0; currPointIndex < pathPoints.length-1; currPointIndex+=2)
             {
@@ -259,11 +249,11 @@ class PathPatroller
     {
         //console.log("Converting polygon points to Global Co-ords...");
         let globalCoords = [];
-        if (drawing.data.points.length != 0) 
+        if (drawing.document.shape.points.length != 0) 
         {
-        drawing.data.points.forEach((point) => {
-            globalCoords.push(point[0] + (drawing.x-50), point[1] + (drawing.y-50));
-        });
+        for(let i = 0; i < drawing.document.shape.points.length; i+=2){
+            globalCoords.push(drawing.document.shape.points[i] + (drawing.x-50), drawing.document.shape.points[i+1] + (drawing.y-50));
+        }
         } 
         else 
         {
