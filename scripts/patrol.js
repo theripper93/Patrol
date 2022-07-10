@@ -210,7 +210,7 @@ class Patrol {
       if (drawing.document.shape.points.length != 0) 
       {
       for(let i = 0; i < drawing.document.shape.points.length; i+=2){
-          globalCoords.push(drawing.document.shape.points[i] + (drawing.x-50), drawing.document.shape.points[i+1] + (drawing.y-50));
+          globalCoords.push(drawing.document.shape.points[i] + (drawing.x), drawing.document.shape.points[i+1] + (drawing.y));
       }
       } 
       else 
