@@ -110,7 +110,7 @@ class PathPatroller
                         isMultiPath = true;
                         patrolPathGroup = canvas.drawings.placeables.filter((d) => 
                         {
-                            if(d.data?.text == pathName)
+                            if(d.document?.text == pathName)
                             {
                                 return d;
                             }
