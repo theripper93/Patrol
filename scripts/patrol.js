@@ -204,25 +204,29 @@ class Patrol {
     return positions
   }
 
-  adjustPolygonPoints(drawing) {
-    let globalPoints = [];
-    if (drawing.document.points.length != 0) {
-      drawing.document.points.forEach((p) => {
-        globalPoints.push(p[0] + drawing.x, p[1] + drawing.y);
-      });
-    } else {
-      globalPoints = [
-        drawing.x,
-        drawing.y,
-        drawing.x + drawing.width,
-        drawing.y,
-        drawing.x + drawing.width,
-        drawing.y + drawing.height,
-        drawing.x,
-        drawing.y + drawing.height,
+  adjustPolygonPoints(drawing) 
+  {
+      let globalCoords = [];
+      if (drawing.document.shape.points.length != 0) 
+      {
+      for(let i = 0; i < drawing.document.shape.points.length; i+=2){
+          globalCoords.push(drawing.document.shape.points[i] + (drawing.x-50), drawing.document.shape.points[i+1] + (drawing.y-50));
+      }
+      } 
+      else 
+      {
+      globalCoords = [
+          drawing.x,
+          drawing.y,
+          drawing.x + drawing.width,
+          drawing.y,
+          drawing.x + drawing.width,
+          drawing.y + drawing.height,
+          drawing.x,
+          drawing.y + drawing.height,
       ];
-    }
-    return globalPoints;
+      }
+      return globalCoords;
   }
 
   detectPlayer(token,preventEvent=false) {

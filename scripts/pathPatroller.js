@@ -245,7 +245,6 @@ class PathPatroller
 
     polygonToGlobal(drawing) 
     {
-        //console.log("Converting polygon points to Global Co-ords...");
         let globalCoords = [];
         if (drawing.document.shape.points.length != 0) 
         {
