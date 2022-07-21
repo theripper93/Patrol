@@ -50,5 +50,8 @@
   "compatibility": {
     "minimum": "10",
     "verified": "10"
-  }
+  },
+
+  "name": "patrol",
+  "minimumCoreVersion": "10"
 }
