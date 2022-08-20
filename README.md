@@ -11,6 +11,7 @@ Automatic Patrol Routes for NPCs
 
 * **Spot Player Characters:** If enabled the token will spot player characters, pausing the game and panning on the token when spotting
 > **WARNING** Support for this feature outside dnd5e is not guaranteeed. If it's not working this is probably why.
+> **NOTE** This currently only works for Random Patrol.
 
 * **Enable Path Patrol:** If enabled the token will follow the given path/paths 
 > **THIS OPTION IS MUTUALLY EXCLUSIVE TO "Enable Random patrol"**
