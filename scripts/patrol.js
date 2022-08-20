@@ -127,13 +127,15 @@ class Patrol {
     let validPositions = [];
     this.getDirections(token.tokenDocument).forEach((d) => {
       if (
+        // has the token visited this position already?
         !token.visitedPositions.includes(`${d.x}-${d.y}`) &&
+        // is the position valid?
         !occupiedPositions.includes(`${d.x}-${d.y}`) &&
+        // is the position in the patrol polygon?
         (!token.patrolPolygon ||
           token.patrolPolygon.contains(d.center.x, d.center.y)) &&
-        !canvas.walls.checkCollision(
-          new Ray(token.tokenDocument.center, d.center)
-        )
+        // is there a wall in the way?
+        !token.tokenDocument.checkCollision(d.center)
       )
         validPositions.push(d);
     });
