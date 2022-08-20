@@ -217,16 +217,16 @@ class Patrol {
       } 
       else 
       {
-      globalCoords = [
-          drawing.x,
-          drawing.y,
-          drawing.x + drawing.width,
-          drawing.y,
-          drawing.x + drawing.width,
-          drawing.y + drawing.height,
-          drawing.x,
-          drawing.y + drawing.height,
-      ];
+        globalCoords = [
+            drawing.bounds.left,
+            drawing.bounds.top,
+            drawing.bounds.right,
+            drawing.bounds.top,
+            drawing.bounds.right,
+            drawing.bounds.bottom,
+            drawing.bounds.left,
+            drawing.bounds.bottom,
+        ];
       }
       return globalCoords;
   }
