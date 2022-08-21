@@ -232,17 +232,14 @@ class Patrol {
   }
 
   detectPlayer(token,preventEvent=false) {
-    let maxDistance = canvas.lighting.globalLight
+    let maxDistance = canvas.effects.illumination.globalLight
       ? 1000
       : token.tokenDocument.document.sight.range
     for (let char of this.characters) {
       if (
         canvas.grid.measureDistance(token.tokenDocument.center, char.center) <=
           maxDistance &&
-        !canvas.walls.checkCollision(
-          new Ray(token.tokenDocument.center, char.center),
-          { type: "sight" }
-        )
+          !token.tokenDocument.checkCollision(char.center,{ type: "sight" })
       ) {
         if(preventEvent) return true
         let spotter = token.tokenDocument;
