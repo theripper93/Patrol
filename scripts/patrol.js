@@ -127,13 +127,15 @@ class Patrol {
     let validPositions = [];
     this.getDirections(token.tokenDocument).forEach((d) => {
       if (
+        // has the token visited this position already?
         !token.visitedPositions.includes(`${d.x}-${d.y}`) &&
+        // is the position valid?
         !occupiedPositions.includes(`${d.x}-${d.y}`) &&
+        // is the position in the patrol polygon?
         (!token.patrolPolygon ||
           token.patrolPolygon.contains(d.center.x, d.center.y)) &&
-        !canvas.walls.checkCollision(
-          new Ray(token.tokenDocument.center, d.center)
-        )
+        // is there a wall in the way?
+        !token.tokenDocument.checkCollision(d.center)
       )
         validPositions.push(d);
     });
@@ -215,32 +217,29 @@ class Patrol {
       } 
       else 
       {
-      globalCoords = [
-          drawing.x,
-          drawing.y,
-          drawing.x + drawing.width,
-          drawing.y,
-          drawing.x + drawing.width,
-          drawing.y + drawing.height,
-          drawing.x,
-          drawing.y + drawing.height,
-      ];
+        globalCoords = [
+            drawing.bounds.left,
+            drawing.bounds.top,
+            drawing.bounds.right,
+            drawing.bounds.top,
+            drawing.bounds.right,
+            drawing.bounds.bottom,
+            drawing.bounds.left,
+            drawing.bounds.bottom,
+        ];
       }
       return globalCoords;
   }
 
   detectPlayer(token,preventEvent=false) {
-    let maxDistance = canvas.lighting.globalLight
+    let maxDistance = canvas.effects.illumination.globalLight
       ? 1000
       : token.tokenDocument.document.sight.range
     for (let char of this.characters) {
       if (
         canvas.grid.measureDistance(token.tokenDocument.center, char.center) <=
           maxDistance &&
-        !canvas.walls.checkCollision(
-          new Ray(token.tokenDocument.center, char.center),
-          { type: "sight" }
-        )
+          !token.tokenDocument.checkCollision(char.center,{ type: "sight" })
       ) {
         if(preventEvent) return true
         let spotter = token.tokenDocument;
