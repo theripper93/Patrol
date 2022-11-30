@@ -19,7 +19,7 @@ class Patrol {
       (d) => d.document.text == "Patrol");
     this.tokens = [];
     canvas.tokens.placeables
-      .filter((t) => t.document.getFlag(MODULE_NAME_PATROL, "enablePatrol") && !t.actor?.effects?.find(e => e.getFlag("core", "statusId") === CONFIG.Combat.defeatedStatusId))
+      .filter((t) => t.document.getFlag(MODULE_NAME_PATROL, "enablePatrol") && !t.actor?.effects?.find(e => e.getFlag("core", "statusId") === CONFIG.specialStatusEffects.DEFEATED))
       .forEach((t) => {
         let tokenDrawing;
         for (let drawing of patrolDrawings) {

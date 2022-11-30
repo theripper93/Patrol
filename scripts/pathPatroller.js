@@ -91,7 +91,7 @@ class PathPatroller
             let nextPathID = "";
             for (let token of _pathPatrol.tokens) 
             {
-                if(token?.tokenDocument?.actor?.effects?.find(e => e.getFlag("core", "statusId") === CONFIG.Combat.defeatedStatusId)) continue;
+                if(token?.tokenDocument?.actor?.effects?.find(e => e.getFlag("core", "statusId") === CONFIG.specialStatusEffects.DEFEATED)) continue;
                 patrolPathGroup = [];
                 name = token.tokenDocument.document.name;
                 id = token.tokenDocument.id;
