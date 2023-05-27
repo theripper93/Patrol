@@ -178,6 +178,8 @@ Hooks.on("renderTokenConfig", (app, html, data) => {
     app.token.getFlag(MODULE_NAME_PATROL, "patrolPathName") || "";
   html.find(`input[name = 'flags.${MODULE_NAME_PATROL}.pathNodeIndex']`)[0].value = 
     app.token.getFlag(MODULE_NAME_PATROL, "pathNodeIndex") || 0;
+  
+  app.setPosition({ height: "auto" });
 });
 
 Hooks.on("createDrawing", () => {
