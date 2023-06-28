@@ -211,8 +211,8 @@ class PathPatroller
                 await token.tokenDocument.document.setFlag(MODULE_NAME_PATROL, "pathNodeIndex", Number(currentPathIndex));
                 
             }
-            
-            canvas.scene.updateEmbeddedDocuments("Token", updates);
+            const context = game.settings.get(MODULE_NAME_PATROL, "patrolSmooth") ? {animation: {duration: _pathPatrol.delay}} : {};
+            canvas.scene.updateEmbeddedDocuments("Token", updates, context);
             
         }
 

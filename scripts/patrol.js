@@ -110,7 +110,8 @@ class Patrol {
           occupiedPositions.push(`${token.tokenDocument.x}-${token.tokenDocument.y}`)
         }
       }
-      canvas.scene.updateEmbeddedDocuments("Token", updates);
+      const context = game.settings.get(MODULE_NAME_PATROL, "patrolSmooth") ? {animation: {duration: _patrol.delay}} : {};
+      canvas.scene.updateEmbeddedDocuments("Token", updates, context);
 
       if (_patrol.DEBUG) {
         perfEnd = performance.now();
@@ -232,14 +233,13 @@ class Patrol {
   }
 
   detectPlayer(token,preventEvent=false) {
-    let maxDistance = canvas.effects.illumination.globalLight
-      ? 1000
-      : token.tokenDocument.document.sight.range
+
+    if(!token.tokenDocument.vision.initialized) _patrol.forceInitVisionSource.bind(token.tokenDocument)()
+    token.tokenDocument.vision.initialize(token.tokenDocument.vision.data);
+
     for (let char of this.characters) {
       if (
-        canvas.grid.measureDistance(token.tokenDocument.center, char.center) <=
-          maxDistance &&
-          !token.tokenDocument.checkCollision(char.center,{ type: "sight" })
+        token.tokenDocument.vision.los.contains(char.center.x, char.center.y)
       ) {
         if(preventEvent) return true
         let spotter = token.tokenDocument;
@@ -274,6 +274,30 @@ class Patrol {
     if(preventEvent) return false
     token.alertTimedOut=false
     return false;
+  }
+
+  forceInitVisionSource() {
+    const origin = this.center;
+    const d = canvas.dimensions;
+
+    // Initialize vision source
+    this.vision.initialize({
+      x: origin.x,
+      y: origin.y,
+      elevation: this.document.elevation,
+      radius: Math.clamped(this.sightRange, 0, d.maxR),
+      externalRadius: this.externalRadius,
+      angle: this.document.sight.angle,
+      contrast: this.document.sight.contrast,
+      saturation: this.document.sight.saturation,
+      brightness: this.document.sight.brightness,
+      attenuation: this.document.sight.attenuation,
+      rotation: this.document.rotation,
+      visionMode: this.document.sight.visionMode,
+      color: Color.from(this.document.sight.color),
+      blinded: this.document.hasStatusEffect(CONFIG.specialStatusEffects.BLIND),
+      preview: this.isPreview,
+    });
   }
 
   

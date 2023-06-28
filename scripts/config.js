@@ -50,14 +50,14 @@ Hooks.on("init", () => {
     },
   });
 
-  /*game.settings.register(MODULE_NAME_PATROL, "patrolSmooth", {
+  game.settings.register(MODULE_NAME_PATROL, "patrolSmooth", {
     name: game.i18n.localize("patrol.settings.patrolSmooth.name"),
     hint: game.i18n.localize("patrol.settings.patrolSmooth.hint"),
     scope: "world",
     config: true,
     type: Boolean,
     default: true,
-  });*/
+  });
 
   game.settings.register(MODULE_NAME_PATROL, "patrolDelay", {
     name: game.i18n.localize("patrol.settings.patrolDelay.name"),
