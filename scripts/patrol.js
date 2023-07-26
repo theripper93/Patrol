@@ -256,6 +256,8 @@ class Patrol {
           this.patrolAlertTimeout(game.settings.get(MODULE_NAME_PATROL, "patrolAlertDelay"),token)
           // Inform any who want to do something with the spotted info
           Hooks.callAll("patrolAlerted", spotter, spotted);
+        } else {
+          continue;
         }
         }else if(token.alertTimedOut){
         // Allow a system / module to override if something was spotted
@@ -265,9 +267,9 @@ class Patrol {
           token.spottedToken = undefined
           // Inform any who want to do something with the spotted info
           Hooks.callAll("patrolSpotted", spotter, spotted);
-        }
         } else {
           continue;
+        }
         }
         
         return true;
