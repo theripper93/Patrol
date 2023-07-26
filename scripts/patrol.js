@@ -266,6 +266,8 @@ class Patrol {
           // Inform any who want to do something with the spotted info
           Hooks.callAll("patrolSpotted", spotter, spotted);
         }
+        } else {
+          return false;
         }
         
         return true;
