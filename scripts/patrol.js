@@ -35,7 +35,7 @@ class Patrol {
                     spottedToken: undefined,
                 });
             });
-        this.characters = canvas.tokens.placeables.filter((t) => t.actor && (t.actor?.type == "character" || t.actor?.type == "char" || t.actor?.hasPlayerOwner));
+        this.characters = canvas.tokens.placeables.filter((t) => t.actor && (((t.actor?.type == "character" || t.actor?.type == "char") && t.actor?.hasPlayerOwner) || t.actor?.hasPlayerOwner));
     }
 
     async patrolSetDelay(ms) {
