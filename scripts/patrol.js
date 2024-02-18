@@ -207,6 +207,8 @@ class Patrol {
         token.tokenDocument.vision.initialize(token.tokenDocument.vision.data);
 
         for (let char of this.characters) {
+            const isUndetectable = char?.actor?.effects?.some(e => e.statuses.some(s => s === "patrolundetectable"))
+            if (isUndetectable) continue;
             if (token.tokenDocument.vision.los.contains(char.center.x, char.center.y)) {
                 if (preventEvent) return true;
                 let spotter = token.tokenDocument;

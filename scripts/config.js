@@ -38,6 +38,12 @@ Hooks.on("getSceneControlButtons", (controls, b, c) => {
 
 Hooks.on("init", () => {
 
+  CONFIG.statusEffects.push({
+    "id": "patrolundetectable",
+    "name": "Patrol - Undetectable",
+    "icon": "icons/svg/eye.svg"
+  });
+
   game.settings.register(MODULE_NAME_PATROL, "patrolDiagonals", {
     name: game.i18n.localize("patrol.settings.patrolDiagonals.name"),
     hint: game.i18n.localize("patrol.settings.patrolDiagonals.hint"),
