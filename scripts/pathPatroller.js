@@ -131,8 +131,8 @@ class PathPatroller
                 {
                     updates.push({
                         _id: token.tokenDocument.document.id,
-                        x: patrolPath[currentPathIndex].x,
-                        y: patrolPath[currentPathIndex].y,
+                        x: patrolPath[currentPathIndex].x - token.tokenDocument.document.width * 0.5 * canvas.grid.size,
+                        y: patrolPath[currentPathIndex].y - token.tokenDocument.document.height * 0.5 * canvas.grid.size,
                     });
                 
                 }
@@ -249,7 +249,7 @@ class PathPatroller
         if (drawing.document.shape.points.length != 0) 
         {
         for(let i = 0; i < drawing.document.shape.points.length; i+=2){
-            globalCoords.push(drawing.document.shape.points[i] + (drawing.x-canvas.grid.size/2), drawing.document.shape.points[i+1] + (drawing.y-canvas.grid.size/2));
+            globalCoords.push(drawing.document.shape.points[i] + (drawing.x), drawing.document.shape.points[i+1] + (drawing.y));
         }
         } 
         else 
