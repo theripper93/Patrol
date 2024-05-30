@@ -93,7 +93,7 @@ class Patrol {
                     token.visitedPositions.push(`${newPosition.x}-${newPosition.y}`);
                     occupiedPositions.push(`${newPosition.x}-${newPosition.y}`);
                 } else {
-                    let snapped = canvas.grid.getSnappedPosition(token.tokenDocument.x, token.tokenDocument.y);
+                    let snapped = canvas.grid.getSnappedPoint({x: token.tokenDocument.x, y: token.tokenDocument.y}, {mode: CONST.GRID_SNAPPING_MODES.TOP_LEFT_VERTEX});
                     token.visitedPositions = [`${snapped.x}-${snapped.y}`];
                     occupiedPositions.push(`${token.tokenDocument.x}-${token.tokenDocument.y}`);
                 }
@@ -180,12 +180,12 @@ class Patrol {
                 },
             );
         for (let pos of positions) {
-            let snapped = canvas.grid.getSnappedPosition(pos.x, pos.y);
+            let snapped = canvas.grid.getSnappedPoint({x: pos.x, y: pos.y}, {mode: CONST.GRID_SNAPPING_MODES.TOP_LEFT_VERTEX});
             pos.x = snapped.x;
             pos.y = snapped.y;
-            let snappedCenter = canvas.grid.getCenter(pos.center.x, pos.center.y);
-            pos.center.x = snappedCenter[0];
-            pos.center.y = snappedCenter[1];
+            let snappedCenter = canvas.grid.getCenterPoint({x: pos.center.x, y: pos.center.y}, {});
+            pos.center.x = snappedCenter.x;
+            pos.center.y = snappedCenter.y;
         }
         return positions;
     }
