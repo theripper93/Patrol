@@ -203,13 +203,12 @@ class Patrol {
     }
 
     detectPlayer(token, preventEvent = false) {
-        if (!token.tokenDocument.vision.initialized) _patrol.forceInitVisionSource.bind(token.tokenDocument)();
-        token.tokenDocument.vision.initialize(token.tokenDocument.vision.data);
-
         for (let char of this.characters) {
             const isUndetectable = char?.actor?.effects?.some(e => e.statuses.some(s => s === "patrolundetectable"))
             if (isUndetectable) continue;
-            if (token.tokenDocument.vision.fov.contains(char.center.x, char.center.y)) {
+            const visionPolygon = new CONFIG.Canvas.visionSourceClass({sourceId: token.tokenDocument.sourceId, object: token.tokenDocument});
+            visionPolygon.initialize(token.tokenDocument._getVisionSourceData());
+            if (visionPolygon.los.contains(char.center.x, char.center.y)) {
                 if (preventEvent) return true;
                 let spotter = token.tokenDocument;
                 let spotted = char;
