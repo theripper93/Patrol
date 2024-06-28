@@ -26,12 +26,8 @@
       "path": "lang/es.json"
     }
   ],
-  "scripts": [
-    "scripts/main.js",
-    "scripts/patrol.js",
-    "scripts/helpers.js",
-    "scripts/config.js",
-    "scripts/pathPatroller.js"
+  "esmodules": [
+    "scripts/main.js"
   ],
   "socket": true,
   "url": "https://github.com/theripper93/Patrol",
@@ -40,11 +36,6 @@
   "id": "patrol",
   "relationships": {
     "requires": [
-      {
-        "id": "socketlib",
-        "type": "module",
-        "compatibility": {}
-      }
     ]
   },
   "compatibility": {

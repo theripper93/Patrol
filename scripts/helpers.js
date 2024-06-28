@@ -1,7 +1,10 @@
-async function patrolSpotted(tokenId) {
+import { MODULE_ID } from "./main.js";
+import { patrolInstances } from "./main.js";
+
+export async function patrolSpotted({ uuid }) {
     game.togglePause(true);
-    let enemyToken = canvas.tokens.get(tokenId);
-    if (game.user.isGM && _patrol.DEBUG) console.log("Spotted by:", enemyToken);
+    let enemyToken = fromUuidSync(uuid)?.object;
+    if (game.user.isGM && patrolInstances._patrol.DEBUG) console.log("Spotted by:", enemyToken);
     await canvas.animatePan({
         x: enemyToken.center.x,
         y: enemyToken.center.y,
@@ -9,7 +12,7 @@ async function patrolSpotted(tokenId) {
     });
     foundry.audio.AudioHelper.play(
         {
-            src: game.settings.get(MODULE_NAME_PATROL, "patrolSound"),
+            src: game.settings.get(MODULE_ID, "patrolSound"),
             volume: 0.8,
             loop: false,
         },
@@ -40,12 +43,12 @@ async function patrolSpotted(tokenId) {
     }
 }
 
-async function patrolAlerted(tokenId) {
-    let enemyToken = canvas.tokens.get(tokenId);
-    if (game.user.isGM && _patrol.DEBUG) console.log("Allerted:", enemyToken);
+export async function patrolAlerted({ uuid }) {
+    let enemyToken = fromUuidSync(uuid)?.object;
+    if (game.user.isGM && patrolInstances._patrol.DEBUG) console.log("Allerted:", enemyToken);
     foundry.audio.AudioHelper.play(
         {
-            src: game.settings.get(MODULE_NAME_PATROL, "patrolAlert"),
+            src: game.settings.get(MODULE_ID, "patrolAlert"),
             volume: 0.8,
             loop: false,
         },
@@ -58,7 +61,7 @@ async function patrolAlerted(tokenId) {
         fill: 0xfff200,
         align: "center",
     });
-    let pADelay = game.settings.get(MODULE_NAME_PATROL, "patrolAlertDelay");
+    let pADelay = game.settings.get(MODULE_ID, "patrolAlertDelay");
     let g = new PIXI.Graphics();
     g.addChild(exclamationMark);
     g.x = (enemyToken.document.width * canvas.scene.dimensions.size) / 2 - g.width / 2;
@@ -75,46 +78,4 @@ async function patrolAlerted(tokenId) {
     function fade() {
         g.alpha -= (pADelay - (pADelay / 5) * 4) / 10000;
     }
-}
-
-async function _patrolAnimateMovement(ray) {
-    // Move distance is 10 spaces per second
-    const s = canvas.dimensions.size;
-    this._movement = ray;
-    const speed = s * 10;
-    let animSpeed;
-    if (this.document.getFlag(MODULE_NAME_PATROL, "makePatroller")) {
-        animSpeed = game.settings.get(MODULE_NAME_PATROL, "pathPatrolDelay");
-    } else if (this.document.getFlag(MODULE_NAME_PATROL, "enablePatrol")) {
-        animSpeed = game.settings.get(MODULE_NAME_PATROL, "patrolDelay");
-    }
-    const duration = game.settings.get(MODULE_NAME_PATROL, "patrolSmooth") && (this.document.getFlag(MODULE_NAME_PATROL, "enablePatrol") || this.document.getFlag(MODULE_NAME_PATROL, "makePatroller")) && !this.controlled ? animSpeed : (ray.distance * 1000) / speed;
-
-    // Define attributes
-    const attributes = [
-        { parent: this, attribute: "x", to: ray.B.x },
-        { parent: this, attribute: "y", to: ray.B.y },
-    ];
-
-    // Determine what type of updates should be animated
-    const emits = this.emitsLight;
-    const config = {
-        animate: game.settings.get("core", "visionAnimation"),
-        source: this._isVisionSource() || emits,
-        sound: this.controlled || this.observer,
-        fog: emits && !this.controlled && canvas.sight.sources.size > 0,
-    };
-
-    // Dispatch the animation function
-    let animationName = `Token.${this.id}.animateMovement`;
-    await CanvasAnimation.animateLinear(attributes, {
-        name: animationName,
-        context: this,
-        duration: duration,
-        ontick: (dt, anim) => this._onMovementFrame(dt, anim, config),
-    });
-
-    // Once animation is complete perform a final refresh
-    if (!config.animate) this._animatePerceptionFrame({ source: config.source, sound: config.sound });
-    this._movement = null;
 }
