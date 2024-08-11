@@ -211,7 +211,7 @@ export class Patrol {
             if (isUndetectable) continue;
             const visionPolygon = new CONFIG.Canvas.visionSourceClass({ sourceId: token.tokenDocument.sourceId, object: token.tokenDocument });
             visionPolygon.initialize(token.tokenDocument._getVisionSourceData());
-            if (visionPolygon.los.contains(char.center.x, char.center.y)) {
+            if (visionPolygon.fov.contains(char.center.x, char.center.y)) {
                 if (preventEvent) return true;
                 let spotter = token.tokenDocument;
                 let spotted = char;
