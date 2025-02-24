@@ -111,6 +111,12 @@ export class Patrol {
         }
     }
 
+    inPolygon(token, position) {
+        const isCenter = token.patrolPolygon.contains(position.center.x, position.center.y);
+        const isTopLeft = token.patrolPolygon.contains(position.x, position.y);
+        return isCenter && isTopLeft;
+    }
+
     getValidPositions(token, occupiedPositions) {
         let validPositions = [];
         this.getDirections(token.tokenDocument).forEach((d) => {
@@ -120,7 +126,7 @@ export class Patrol {
                 // is the position valid?
                 !occupiedPositions.includes(`${d.x}-${d.y}`) &&
                 // is the position in the patrol polygon?
-                (!token.patrolPolygon || token.patrolPolygon.contains(d.center.x, d.center.y)) &&
+                (!token.patrolPolygon || (this.inPolygon(token, d))) &&
                 // is there a wall in the way?
                 !token.tokenDocument.checkCollision(d.center)
             )
