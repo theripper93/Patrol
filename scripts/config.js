@@ -10,31 +10,28 @@ export function setupHooks() {
         if (game.user.isGM) {
             if (!patrolInstances._patrol) patrolInstances._patrol = Patrol.get();
             if (!patrolInstances._pathPatrol) patrolInstances._pathPatrol = PathPatroller.get();
-            const basictools = controls.find((x) => x["name"] == "token").tools;
-            basictools.push(
-                {
-                    active: patrolInstances._patrol.started,
-                    icon: "fas fa-walking",
-                    name: "patrolToggle",
-                    title: game.i18n.localize("patrol.tools.patrolToggle.hint"),
-                    onClick: (toggle) => {
-                        patrolInstances._patrol.started = toggle;
-                        patrolInstances._pathPatrol.started = toggle;
-                    },
-                    toggle: true,
+            controls.tokens.tools.patrolToggle = {
+                active: patrolInstances._patrol.started,
+                icon: "fas fa-walking",
+                name: "patrolToggle",
+                title: game.i18n.localize("patrol.tools.patrolToggle.hint"),
+                onChange: (toggle) => {
+                    patrolInstances._patrol.started = toggle;
+                    patrolInstances._pathPatrol.started = toggle;
                 },
-                {
+                toggle: true,
+            };
+            controls.tokens.tools.remapPatrolPaths = {
                     button: true,
                     visible: true,
                     icon: "fas fa-draw-polygon",
                     name: "remapPatrolPaths",
                     title: game.i18n.localize("patrol.tools.remapPatrolPaths.hint"),
-                    onClick: () => {
+                    onChange: () => {
                         patrolInstances._pathPatrol.mapTokensAndPaths();
                         patrolInstances._pathPatrol.resetPathIndex();
                     },
-                },
-            );
+                };
         }
     });
 
@@ -148,40 +145,46 @@ export function setupHooks() {
     });
 
     Hooks.on("renderTokenConfig", (app, html, data) => {
-        if (!game.user.isGM) return;
-        let toggleHTML = `<div class="form-group">
-  <label>${game.i18n.localize("patrol.tokenConfig.enablePatrol.name")}</label>
-  <input type="checkbox" name="flags.${MODULE_ID}.enablePatrol" data-dtype="Boolean">
-</div>
-<div class="form-group">
-  <label>${game.i18n.localize("patrol.tokenConfig.enableSpotting.name")}</label>
-  <input type="checkbox" name="flags.${MODULE_ID}.enableSpotting" data-dtype="Boolean">
-</div>
-<div class="form-group">
-  <label>${game.i18n.localize("patrol.tokenConfig.makePatroller.name")}</label>
-  <input type="checkbox" name="flags.${MODULE_ID}.makePatroller" data-dtype="Boolean">
-  <label>${game.i18n.localize("patrol.tokenConfig.multiPath.name")}</label>
-  <input type="checkbox" name="flags.${MODULE_ID}.multiPath" data-dtype="Boolean">
-</div>
-<div class="form-group">
-  <label>${game.i18n.localize("patrol.tokenConfig.patrolPathName.name")}</label>
-  <input type="text" name="flags.${MODULE_ID}.patrolPathName" value="">
-  <label> ${game.i18n.localize("patrol.tokenConfig.pathNodeIndex.name")} </label>
-  <input type="text" name="flags.${MODULE_ID}.pathNodeIndex" value="">
-</div>
-`;
-        const lockrotation = html.find("input[name='lockRotation']");
-        const formGroup = lockrotation.closest(".form-group");
-        formGroup.after(toggleHTML);
-        html.find(`input[name ='flags.${MODULE_ID}.enablePatrol']`)[0].checked = app.token.getFlag(MODULE_ID, "enablePatrol") || false;
-        html.find(`input[name ='flags.${MODULE_ID}.enableSpotting']`)[0].checked = app.token.getFlag(MODULE_ID, "enableSpotting") || false;
-        html.find(`input[name ='flags.${MODULE_ID}.makePatroller']`)[0].checked = app.token.getFlag(MODULE_ID, "makePatroller") || false;
-        html.find(`input[name ='flags.${MODULE_ID}.multiPath']`)[0].checked = app.token.getFlag(MODULE_ID, "multiPath") || false;
-        html.find(`input[name = 'flags.${MODULE_ID}.patrolPathName']`)[0].value = app.token.getFlag(MODULE_ID, "patrolPathName") || "";
-        html.find(`input[name = 'flags.${MODULE_ID}.pathNodeIndex']`)[0].value = app.token.getFlag(MODULE_ID, "pathNodeIndex") || 0;
-
+        if (!game.user.isGM || html.querySelector("input[name='flags.patrol.enablePatrol']")) return;
+      
+        const token = app.token;
+      
+        const toggleHTML = `
+        <fieldset>
+          <legend><i class="fas fa-walking"></i> Patrol</legend>
+          <div class="form-group">
+            <label>${game.i18n.localize("patrol.tokenConfig.enablePatrol.name")}</label>
+            <input type="checkbox" name="flags.${MODULE_ID}.enablePatrol" data-dtype="Boolean" ${token.getFlag(MODULE_ID, "enablePatrol") ? "checked" : ""}>
+          </div>
+          <div class="form-group">
+            <label>${game.i18n.localize("patrol.tokenConfig.enableSpotting.name")}</label>
+            <input type="checkbox" name="flags.${MODULE_ID}.enableSpotting" data-dtype="Boolean" ${token.getFlag(MODULE_ID, "enableSpotting") ? "checked" : ""}>
+          </div>
+          <div class="form-group">
+            <label>${game.i18n.localize("patrol.tokenConfig.makePatroller.name")}</label>
+            <input type="checkbox" name="flags.${MODULE_ID}.makePatroller" data-dtype="Boolean" ${token.getFlag(MODULE_ID, "makePatroller") ? "checked" : ""}>
+            <label>${game.i18n.localize("patrol.tokenConfig.multiPath.name")}</label>
+            <input type="checkbox" name="flags.${MODULE_ID}.multiPath" data-dtype="Boolean" ${token.getFlag(MODULE_ID, "multiPath") ? "checked" : ""}>
+          </div>
+          <div class="form-group">
+            <label>${game.i18n.localize("patrol.tokenConfig.patrolPathName.name")}</label>
+            <input type="text" name="flags.${MODULE_ID}.patrolPathName" value="${token.getFlag(MODULE_ID, "patrolPathName") ?? ""}">
+            <label>${game.i18n.localize("patrol.tokenConfig.pathNodeIndex.name")}</label>
+            <input type="text" name="flags.${MODULE_ID}.pathNodeIndex" value="${token.getFlag(MODULE_ID, "pathNodeIndex") ?? 0}">
+          </div>
+          </fieldset>
+        `;
+      
+        const lockRotationInput = html.querySelector("input[name='lockRotation']");
+        const formGroup = lockRotationInput.closest(".form-group");
+      
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = toggleHTML;
+        formGroup.insertAdjacentElement("afterend", wrapper);
+      
         app.setPosition({ height: "auto" });
-    });
+      });
+      
 
     Hooks.on("createDrawing", () => {
         if (game.user.isGM) {
