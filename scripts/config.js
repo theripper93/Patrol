@@ -144,7 +144,7 @@ export function setupHooks() {
         });
     });
 
-    Hooks.on("renderTokenConfig", (app, html, data) => {
+    const renderTokenConfig = (app, html, data) => {
         if (!game.user.isGM || html.querySelector("input[name='flags.patrol.enablePatrol']")) return;
       
         const token = app.token;
@@ -183,7 +183,10 @@ export function setupHooks() {
         formGroup.insertAdjacentElement("afterend", wrapper);
       
         app.setPosition({ height: "auto" });
-      });
+      }
+
+    Hooks.on("renderTokenConfig", renderTokenConfig);
+    Hooks.on("renderPrototypeTokenConfig",renderTokenConfig);
       
 
     Hooks.on("createDrawing", () => {
