@@ -102,6 +102,8 @@ export class Patrol {
                 }
             }
             const context = game.settings.get(MODULE_ID, "patrolSmooth") ? { animation: { duration: patrolInstances._patrol.delay } } : {};
+            context.movement = {};
+            updates.forEach(u => context.movement[u._id] = {autoRotate: game.settings.get("core", "tokenAutoRotate")})
             canvas.scene.updateEmbeddedDocuments("Token", updates, context);
 
             if (patrolInstances._patrol.DEBUG) {

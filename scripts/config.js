@@ -15,7 +15,7 @@ export function setupHooks() {
                 icon: "fas fa-walking",
                 name: "patrolToggle",
                 title: game.i18n.localize("patrol.tools.patrolToggle.hint"),
-                onChange: (toggle) => {
+                onChange: (event, toggle) => {
                     patrolInstances._patrol.started = toggle;
                     patrolInstances._pathPatrol.started = toggle;
                 },
