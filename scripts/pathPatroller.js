@@ -172,6 +172,8 @@ export class PathPatroller {
                 await token.tokenDocument.document.setFlag(MODULE_ID, "pathNodeIndex", Number(currentPathIndex));
             }
             const context = game.settings.get(MODULE_ID, "patrolSmooth") ? { animation: { duration: patrolInstances._pathPatrol.delay } } : {};
+            context.movement = {};
+            updates.forEach(u => context.movement[u._id] = {autoRotate: game.settings.get("core", "tokenAutoRotate")})
             canvas.scene.updateEmbeddedDocuments("Token", updates, context);
         }
     }
