@@ -102,7 +102,7 @@ export class PathPatroller {
                         }
                     });
                 }
-                if (patrolPath[0] != undefined) {
+                if (patrolPath[0] != undefined && patrolPath[currentPathIndex]) {
                     updates.push({
                         _id: token.tokenDocument.document.id,
                         x: patrolPath[currentPathIndex].x - token.tokenDocument.document.width * 0.5 * canvas.grid.size,
