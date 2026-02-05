@@ -36,6 +36,8 @@ Hooks.on("canvasReady",()=>{
   patrolInstances._pathPatrol.started=pathPatrolWasStarted
   patrolInstances._pathPatrol.stopPatrol()
   patrolInstances._pathPatrol.startPatrol()
+
+  game.patrol = patrolInstances
 })
 
 Hooks.on("patrolSpotted", (token, char) => {

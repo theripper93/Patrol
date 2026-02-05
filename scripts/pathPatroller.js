@@ -171,9 +171,9 @@ export class PathPatroller {
                 //console.log("Updating pathIndex flag to " + currentPathIndex);
                 await token.tokenDocument.document.setFlag(MODULE_ID, "pathNodeIndex", Number(currentPathIndex));
             }
-            const context = game.settings.get(MODULE_ID, "patrolSmooth") ? { animation: { duration: patrolInstances._pathPatrol.delay } } : {};
+            const context = {};
             context.movement = {};
-            updates.forEach(u => context.movement[u._id] = {autoRotate: game.settings.get("core", "tokenAutoRotate")})
+            updates.forEach(u => context.movement[u._id] = {autoRotate: game.settings.get("core", "tokenAutoRotate"), animation: { duration: patrolInstances._pathPatrol.delay } });
             canvas.scene.updateEmbeddedDocuments("Token", updates, context);
         }
     }
