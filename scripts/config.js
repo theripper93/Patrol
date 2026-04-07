@@ -15,10 +15,7 @@ export function setupHooks() {
                 icon: "fas fa-walking",
                 name: "patrolToggle",
                 title: game.i18n.localize("patrol.tools.patrolToggle.hint"),
-                onChange: (event, toggle) => {
-                    patrolInstances._patrol.started = toggle;
-                    patrolInstances._pathPatrol.started = toggle;
-                },
+                onChange: (event, toggle) => toggle ? patrolInstances._patrol.patrolStart() : patrolInstances._patrol.patrolStop(),
                 toggle: true,
             };
             controls.tokens.tools.remapPatrolPaths = {
@@ -73,7 +70,7 @@ export function setupHooks() {
             config: true,
             type: Number,
             range: {
-                min: 500,
+                min: 30,
                 max: 10000,
                 step: 100,
             },
@@ -142,6 +139,18 @@ export function setupHooks() {
             type: Boolean,
             default: false,
         });
+
+        game.settings.register(MODULE_ID, "steppingMode", {
+            name: game.i18n.localize("patrol.settings.steppingMode.name"),
+            hint: game.i18n.localize("patrol.settings.steppingMode.hint"),
+            scope: "world",
+            config: true,
+            type: Boolean,
+            default: false,
+            onChange: (setting) => {
+                patrolInstances._patrol.stepping = setting;
+            },
+        })
     });
 
     const renderTokenConfig = (app, html, data) => {

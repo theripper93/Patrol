@@ -5,8 +5,6 @@ import { setupHooks } from "./config.js";
 
 export const MODULE_ID = "patrol";
 
-
-
 export const patrolInstances = {
   _patrol : undefined,
   _pathPatrol : undefined,
@@ -27,10 +25,10 @@ Hooks.on("canvasReady",()=>{
     patrolInstances._pathPatrol.stopPatrol()
     pathPatrolWasStarted = patrolInstances._pathPatrol.started
   }
-  patrolInstances._patrol = Patrol.get()
+  if (!patrolInstances._patrol) patrolInstances._patrol = Patrol.get()
   patrolInstances._patrol.started=patrolWasstarted
   patrolInstances._patrol.patrolStop()
-  patrolInstances._patrol.patrolStart()
+  // patrolInstances._patrol.patrolStart()
   
   patrolInstances._pathPatrol = PathPatroller.get()
   patrolInstances._pathPatrol.started=pathPatrolWasStarted
@@ -47,3 +45,8 @@ Hooks.on("patrolSpotted", (token, char) => {
 Hooks.on("patrolAlerted", (token, char) =>  {
   Socket.alerted({uuid: token.document.uuid});
 });
+
+Hooks.on("pauseGame", (paused) => {
+  if(!game.user.isGM) return;
+  paused ? patrolInstances._patrol.patrolPause() : patrolInstances._patrol.patrolUnpause();
+})

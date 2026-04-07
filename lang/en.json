@@ -22,5 +22,7 @@
     "patrol.tokenConfig.multiPath.name": "Use Multiple Paths",
     "patrol.tokenConfig.makePatroller.name": "Enable Path Patrol",
     "patrol.tokenConfig.patrolPathName.name": "Patrol Path Name",
-    "patrol.tokenConfig.pathNodeIndex.name": "Path Node"
+    "patrol.tokenConfig.pathNodeIndex.name": "Path Node",
+    "patrol.settings.steppingMode.name": "Stepping Mode",
+    "patrol.settings.steppingMode.hint": "Enable stepping mode. If checked, tokens will only move if manually triggered by the GM"
 }
