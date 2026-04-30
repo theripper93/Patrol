@@ -35,15 +35,17 @@ export function setupHooks() {
         }
     });
 
-    Hooks.on("init", () => {
-        Socket.register("spotted", patrolSpotted);
-        Socket.register("alerted", patrolAlerted);
-
-        CONFIG.statusEffects.push({
+    Hooks.on("ready", () => {
+        CONFIG.statusEffects["patrolundetectable"] = {
             id: "patrolundetectable",
             name: "Patrol - Undetectable",
             icon: "icons/svg/eye.svg",
-        });
+        };
+    });
+
+    Hooks.on("init", () => {
+        Socket.register("spotted", patrolSpotted);
+        Socket.register("alerted", patrolAlerted);
 
         game.settings.register(MODULE_ID, "patrolDiagonals", {
             name: game.i18n.localize("patrol.settings.patrolDiagonals.name"),
