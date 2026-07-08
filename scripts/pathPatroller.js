@@ -205,13 +205,33 @@ export class PathPatroller {
 
     polygonToGlobal(drawing) {
         let globalCoords = [];
-        if (drawing.document.shape.points.length != 0) {
-            for (let i = 0; i < drawing.document.shape.points.length; i += 2) {
-                globalCoords.push(drawing.document.shape.points[i] + drawing.x, drawing.document.shape.points[i + 1] + drawing.y);
+        const document = drawing.document;
+        const shape = document.shape;
+        const points = shape.points;
+        const x = document.x;
+        const y = document.y;
+        const width = shape.width;
+        const height = shape.height;
+        const rotationCenter = { x: width / 2, y: height / 2 };
+        const rotation = Math.toRadians(document.rotation);
+        if (points.length != 0) {
+            for (let i = 0; i < points.length; i += 2) {
+                const pointX = points[i];
+                const pointY = points[i + 1];
+                const rotatedPoint = this.rotatePoint(pointX, pointY, rotationCenter, rotation);
+                globalCoords.push(x + rotatedPoint.x, y + rotatedPoint.y);
             }
         } else {
-            globalCoords = [drawing.x, drawing.y, drawing.x + drawing.width, drawing.y, drawing.x + drawing.width, drawing.y + drawing.height, drawing.x, drawing.y + drawing.height];
+            globalCoords = [x, y, x + width, y, x + width, y + height, x, y + height];
         }
         return globalCoords;
+    }
+
+    rotatePoint(x, y, center, angle) {
+        const x1 = x - center.x;
+        const y1 = y - center.y;
+        const newX = x1 * Math.cos(angle) - y1 * Math.sin(angle) + center.x;
+        const newY = x1 * Math.sin(angle) + y1 * Math.cos(angle) + center.y;
+        return { x: newX, y: newY };
     }
 }
