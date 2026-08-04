@@ -2,8 +2,14 @@ import {Socket} from "./lib/socket.js";
 import { Patrol } from "./patrol.js";
 import {PathPatroller} from "./pathPatroller.js";
 import { setupHooks } from "./config.js";
+import { PatrolApp } from "./app/PatrolApp.js";
+import { registerSettings } from "./settings.js";
 
 export const MODULE_ID = "patrol";
+
+Hooks.on("init", () => {
+    registerSettings();
+});
 
 export const patrolInstances = {
   _patrol : undefined,

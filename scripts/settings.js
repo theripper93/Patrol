@@ -7,6 +7,22 @@ export function registerSettings() {
     const settings = {
         areasData: {
             type: Object,
+            default: {
+                "areaUuid0": {
+                    regionId: "gwGN5x5TZriPt02q",
+                    connectedAreas: [],
+                    blacklist: new Set(), // Set of user IDs, supercedes whitelist
+                    whitelist: new Set(), // Set of user IDs, ignored if empty
+                    section: null,
+                    weight: 1,
+                    cells: [],
+                },
+            },
+            scope: "world",
+            config: false
+        },
+        sectionsData: {
+            type: Object,
             default: {},
             scope: "world",
             config: false
