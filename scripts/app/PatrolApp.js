@@ -111,7 +111,7 @@ function buildNextPath(token) {
     const randomIndex = Math.floor(Math.random() * cells.length);
     const destination = cells[randomIndex];
 
-    const start = canvas.grid.getOffsetRange(token);
+    const start = canvas.grid.getOffset(token.center);
     const path = getPathFromTo(cells, start, destination);
 
     cache.tokenPaths[token.id] = {
@@ -121,11 +121,45 @@ function buildNextPath(token) {
 }
 
 function getPathFromTo(cells, start, end) {
+    // Build lookup set for O(1) membership
+    const cellSet = new Set(cells.map(c => `${c.i},${c.j}`));
+    const sk = `${start.i},${start.j}`;
+    const ek = `${end.i},${end.j}`;
+    if (!cellSet.has(sk) || !cellSet.has(ek)) return [];
+
+    // BFS
+    const parent = new Map();
+    const visited = new Set();
+    const frontier = [start];
+    visited.add(sk);
+
+    while (frontier.length > 0) {
+        const current = frontier.shift();
+        const ck = `${current.i},${current.j}`;
+        if (ck === ek) break;
+
+        for (const nb of canvas.grid.getAdjacentOffsets(current)) {
+            const nk = `${nb.i},${nb.j}`;
+            if (visited.has(nk) || !cellSet.has(nk)) continue;
+            visited.add(nk);
+            parent.set(nk, {i: nb.i, j: nb.j});
+            frontier.push(nb);
+        }
+    }
+
+    if (!parent.has(ek) && sk !== ek) return [];
+
+    // Reconstruct: walk backward from end to start
     const path = [];
+    let cur = end;
+    while (true) {
+        path.push(canvas.grid.getCenterPoint(cur));
+        const ck = `${cur.i},${cur.j}`;
+        if (ck === sk) break;
+        cur = parent.get(ck);
+    }
 
-    // A* search or BFS. Look only at the cells in the area
-
-    return path;
+    return path.reverse();
 }
 
 function getNextArea(token) {
