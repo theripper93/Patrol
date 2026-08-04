@@ -9,7 +9,7 @@ export function registerSettings() {
             type: Object,
             default: {
                 "areaUuid0": {
-                    regionId: "gwGN5x5TZriPt02q",
+                    regionId: "T6o7DbtIxeoYmHQW",
                     connectedAreas: [],
                     blacklist: new Set(), // Set of user IDs, supercedes whitelist
                     whitelist: new Set(), // Set of user IDs, ignored if empty

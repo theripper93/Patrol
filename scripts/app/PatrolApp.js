@@ -101,6 +101,10 @@ function getAreaForToken(token) {
     }
 }
 
+function getNextDestination(token) {
+    
+}
+
 function buildNextPath(token) {
     const areaId = cache.tokenAreas[token.id];
     if (!areaId) return;
@@ -114,14 +118,24 @@ function buildNextPath(token) {
     const start = canvas.grid.getOffset(token.center);
     const path = getPathFromTo(cells, start, destination);
 
+    const graphic = new PIXI.Graphics();
+    graphic.lineStyle(2, 0x00ff00);
+    graphic.beginFill(0x00ff00, 0.5);
+    for (const point of path) {
+        graphic.drawCircle(point.x, point.y, 2);
+    }
+    graphic.endFill();
+    token.addChild(graphic);
+
     cache.tokenPaths[token.id] = {
         step: 0,
         path: path,
     };
 }
 
+window.buildNextPath = buildNextPath;
+
 function getPathFromTo(cells, start, end) {
-    // Build lookup set for O(1) membership
     const cellSet = new Set(cells.map(c => `${c.i},${c.j}`));
     const sk = `${start.i},${start.j}`;
     const ek = `${end.i},${end.j}`;
@@ -149,7 +163,6 @@ function getPathFromTo(cells, start, end) {
 
     if (!parent.has(ek) && sk !== ek) return [];
 
-    // Reconstruct: walk backward from end to start
     const path = [];
     let cur = end;
     while (true) {
@@ -307,7 +320,7 @@ function exploreRegion(areaId) {
             if (!region.polygonTree.testPoint(center)) continue;
 
             // Must not be blocked by a wall
-            if (wallBetween(cell, neighbor, wallCache)) continue;
+            // if (wallBetween(cell, neighbor, wallCache)) continue;
 
             visited.add(key);
             frontier.push(neighbor);
