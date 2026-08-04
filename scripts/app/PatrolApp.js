@@ -54,17 +54,31 @@ const cache = {
         },
         // ...
     },
-    currentTokenAreas: {
+    tokenAreas: {
         "tokenUuid0": "areaUuid0",
         "tokenUuid1": "areaUuid1",
         // ...
-    }
+    },
+    tokenDestinations: {
+        "tokenUuid0": {x: 100, y: 200},
+    },
+    tokenPaths: {
+        "tokenUuid0": {
+            step: 0,
+            path: [
+                {x: 100, y: 200},
+                {x: 100, y: 200},
+                {x: 300, y: 200},
+                {x: 300, y: 200},
+            ]
+        },
+    },
 }
 
 window.patrolCache = cache;
 
 function initCurrentTokenAreas() {
-    cache.currentTokenAreas = {};
+    cache.tokenAreas = {};
     
     const tokens = canvas.tokens.placeables;
     for (const token of tokens) {
@@ -74,7 +88,7 @@ function initCurrentTokenAreas() {
         const areaId = getAreaForToken(token);
         if (!areaId) continue;
 
-        cache.currentTokenAreas[token.id] = areaId;
+        cache.tokenAreas[token.id] = areaId;
     }
 }
 
@@ -84,23 +98,48 @@ function getAreaForToken(token) {
         if (!region) continue;
 
         if (region.polygonTree.testPoint(token.center)) return areaId;
-        // const areaData = cache.areasData[areaId];
-        // if (areaData.cells.includes(token.center)) return areaId;
     }
+}
+
+function buildNextPath(token) {
+    const areaId = cache.tokenAreas[token.id];
+    if (!areaId) return;
+
+    const cells = cache.areasData[areaId].cells;
+    if (!cells || !cells.length) return;
+
+    const randomIndex = Math.floor(Math.random() * cells.length);
+    const destination = cells[randomIndex];
+
+    const start = canvas.grid.getOffsetRange(token);
+    const path = getPathFromTo(cells, start, destination);
+
+    cache.tokenPaths[token.id] = {
+        step: 0,
+        path: path,
+    };
+}
+
+function getPathFromTo(cells, start, end) {
+    const path = [];
+
+    // A* search or BFS. Look only at the cells in the area
+
+    return path;
 }
 
 function getNextArea(token) {
     const isPatroller = token.actor?.getFlag(MODULE_ID, "isPatroller");
     if (!isPatroller) return;
 
-    const currentTokenArea = currentTokenAreas[token.id];
+    const currentTokenArea = cache.tokenAreas[token.id];
     if (!currentTokenArea) return;
 
     const allowedAreas = getAllowedAreas(currentTokenArea);
     if (!allowedAreas.length) return currentTokenArea;
 
     const selectedArea = getRandomArea(allowedAreas);
-    currentTokenAreas[token.id] = selectedArea;
+    cache.tokenAreas[token.id] = selectedArea;
 
     return selectedArea;
 }
