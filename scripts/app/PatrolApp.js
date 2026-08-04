@@ -8,7 +8,6 @@ export class PatrolApp extends HandlebarsApplication {
         const context = await super._prepareContext(options);
 
         
-
         return context;
     }
 
