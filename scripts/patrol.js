@@ -7,13 +7,9 @@ export class Patrol {
         this.executePatrol = false;
         this.started = false;
         this.delay = game.settings.get(MODULE_ID, "patrolDelay") || 2500;
-        this.diagonals = game.settings.get(MODULE_ID, "patrolDiagonals") || false;
         this.DEBUG = false;
-        this.handleUpdatesTask = null;
-        this.controlTokenTask = null;
         this.currentComputationId = null;
         this.patrolDrawings = [];
-        this.paused = game.paused;
         this.computeTime = 0;
         this.computeIterations = 0;
         this.frameComputeTime = 0;
@@ -23,7 +19,7 @@ export class Patrol {
         this.stepping = game.settings.get(MODULE_ID, "steppingMode");
     }
 
-    static get() {
+    static create() {
         return new Patrol();
     }
 
@@ -73,7 +69,7 @@ export class Patrol {
         let highest = null;
         let lowest = null;
         const tokenDrawings = [];
-        for (let drawing of this.patrolDrawings) {
+        for (const drawing of this.patrolDrawings) {
             const polygon = new PIXI.Polygon(this.adjustPolygonPoints(drawing));
             if (!this.inPolygon(polygon, token, strict)) continue;
             const match = drawing.document.text.match(/Patrol(\+|\-|=|\d+)?/);
@@ -92,13 +88,11 @@ export class Patrol {
             tokenDrawings.push([polygon, parseInt(match[1])]);
         }
         const length = tokenDrawings.length;
-        if (lowest && highest && length === 0) return lowest;
-        if (lowest && highest && length !== 0) return this.weightedPick(tokenDrawings)[0];
+        // Priority: weighted drawings (by weight) > lowest (-) > highest (+) > none
+        if (length > 0) return length === 1 ? tokenDrawings[0][0] : this.weightedPick(tokenDrawings)[0];
+        if (lowest) return lowest;
         if (highest) return highest;
-        if (lowest && length === 0) return lowest;
-        if (length === 0) return;
-        if (length === 1) return tokenDrawings[0][0];
-        return this.weightedPick(tokenDrawings)[0];
+        return undefined;
     }
     
     inPolygon(polygon, token, strict) {
@@ -111,7 +105,7 @@ export class Patrol {
         return isCenter || isTopLeft || isTopRight || isBottomLeft || isBottomRight;
     }
 
-    async patrolAlertTimeout(ms, token) {
+    patrolAlertTimeout(ms, token) {
         setTimeout(() => {
             token.alertTimedOut = true;
             token.alerted = false;
@@ -119,7 +113,7 @@ export class Patrol {
     }
 
     _start() {
-        if (this.paused || !this.started) return;
+        if (game.paused || !this.started) return;
         this.patrolDrawings = canvas.drawings.placeables.filter((d) => d.document.text.match(/Patrol\d*/));
         this.currentComputationId = foundry.utils.randomID();
         this.mapTokens();
@@ -140,13 +134,11 @@ export class Patrol {
     }
 
     patrolPause() {
-        this.paused = true;
         this._stop();
     }
 
     patrolUnpause() {
-        this.paused = false;
-        this._start();
+        if (!game.paused) this._start();
     }
 
     async computeTokensStep(debugTarget) {
@@ -193,11 +185,10 @@ export class Patrol {
             x: position.x,
             y: position.y,
         };
-        let autoRotate = false; //game.settings.get("core", "tokenAutoRotate");
         const speed = 0.1;
         const distance = canvas.grid.measurePath([token.tokenDocument.center, update]);
         const duration = (distance.distance * 1000) / (canvas.dimensions.distance * speed);
-        try { await token.tokenDocument.document.update(update, { animation: { duration: duration }, movement: { [update._id]: { autoRotate } } }); } catch (e) { }
+        try { await token.tokenDocument.document.update(update, { animation: { duration: duration }, movement: { [update._id]: { autoRotate: false } } }); } catch (e) { console.warn(`Patrol | Error updating token ${token.tokenDocument?.name}:`, e); }
         if (token.tokenDocument.movementAnimationPromise) await token.tokenDocument.movementAnimationPromise;
         await scheduleNextComputation();
     }
@@ -231,7 +222,7 @@ export class Patrol {
                 if (intersection) intersections.push(intersection);
             }
             intersections.sort((a, b) => Math.hypot(a.x - p1.x, a.y - p1.y) - Math.hypot(b.x - p1.x, b.y - p1.y));
-            if (intersections.lengh === 1) possiblePoints.push(p2);
+            if (intersections.length === 1) possiblePoints.push(p2);
             if (intersections.length > 1) possiblePoints.push({
                 x: (intersections[0].x + intersections[1].x) / 2,
                 y: (intersections[0].y + intersections[1].y) / 2,
@@ -263,23 +254,7 @@ export class Patrol {
         const h = token.tokenDocument.h;
         const grid = canvas.grid.size;
         function snap(point, dx, dy) {
-            // const snapped = canvas.grid.getSnappedPoint({ x: point.x, y: point.y }, { mode: CONST.GRID_SNAPPING_MODES.VERTEX });
             const snapped = point;
-            console.log(snapped.x, snapped.y, dx, dy);
-
-            // snapped.x -= w / 2;
-            // snapped.y -= h / 2;
-
-            // if (dx > 0 && dx >= w / 2) snapped.x -= w / 2;
-            // if (dy > 0 && dy >= h / 2) snapped.y -= h / 2;
-            // if (dx < 0 && dx <= -w / 2) snapped.x += w / 2;
-            // if (dy < 0 && dy <= -h / 2) snapped.y += h / 2;
-            
-            // if (dx > 0 && dx >= w / 2) snapped.x -= w / 2;
-            // if (dy > 0 && dy >= h / 2) snapped.y -= h / 2;
-            // if (dx < 0 && dx <= -w / 2) snapped.x += w / 2;
-            // if (dy < 0 && dy <= -h / 2) snapped.y += h / 2;
-            
             if (dx > 0) {
                 if (dx >= w) snapped.x -= w;
                 else snapped.x -= dx;
@@ -288,10 +263,8 @@ export class Patrol {
                 if (dy >= h) snapped.y -= h;
                 else snapped.y -= dy;
             }
-            
             snapped.x = Math.round(snapped.x / grid) * grid;
             snapped.y = Math.round(snapped.y / grid) * grid;
-            console.log(snapped.x, snapped.y);
             return { x: snapped.x, y: snapped.y };
         }
         const polygon = token.patrolPolygon;
@@ -336,7 +309,7 @@ export class Patrol {
         if (debugTarget) {
             dx = debugTarget.x - safePoint.x;
             dy = debugTarget.y - safePoint.y;
-        };
+        }
 
         let targetPoint = {
             x: safePoint.x + dx,
@@ -355,8 +328,6 @@ export class Patrol {
             dx = targetPoint.x - safePoint.x;
             dy = targetPoint.y - safePoint.y;
         }
-
-        // return targetPoint;
 
         return snap(targetPoint, dx, dy);
     }
@@ -466,11 +437,6 @@ export class Patrol {
         return gfx;
     }
 
-    normalize(v) {
-        const len = Math.sqrt(v.x * v.x + v.y * v.y);
-        return len === 0 ? { x: 0, y: 0 } : { x: v.x / len, y: v.y / len };
-    }
-
     adjustPolygonPoints(drawing) {
         let globalCoords = [];
         const document = drawing.document;
@@ -547,29 +513,5 @@ export class Patrol {
         if (preventEvent) return false;
         token.alertTimedOut = false;
         return false;
-    }
-
-    forceInitVisionSource() {
-        const origin = this.center;
-        const d = canvas.dimensions;
-
-        // Initialize vision source
-        this.vision.initialize({
-            x: origin.x,
-            y: origin.y,
-            elevation: this.document.elevation,
-            radius: Math.clamped(this.sightRange, 0, d.maxR),
-            externalRadius: this.externalRadius,
-            angle: this.document.sight.angle,
-            contrast: this.document.sight.contrast,
-            saturation: this.document.sight.saturation,
-            brightness: this.document.sight.brightness,
-            attenuation: this.document.sight.attenuation,
-            rotation: this.document.rotation,
-            visionMode: this.document.sight.visionMode,
-            color: Color.from(this.document.sight.color),
-            blinded: this.document.hasStatusEffect(CONFIG.specialStatusEffects.BLIND),
-            preview: this.isPreview,
-        });
     }
 }

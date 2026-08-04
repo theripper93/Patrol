@@ -8,7 +8,7 @@ import { patrolInstances } from "./main.js";
 export function setupHooks() {
     Hooks.on("getSceneControlButtons", (controls, b, c) => {
         if (game.user.isGM) {
-            if (!patrolInstances._patrol) patrolInstances._patrol = Patrol.get();
+            if (!patrolInstances._patrol) patrolInstances._patrol = Patrol.create();
             if (!patrolInstances._pathPatrol) patrolInstances._pathPatrol = PathPatroller.get();
             controls.tokens.tools.patrolToggle = {
                 active: patrolInstances._patrol.started,

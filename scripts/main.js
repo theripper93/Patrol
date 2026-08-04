@@ -25,7 +25,7 @@ Hooks.on("canvasReady",()=>{
     patrolInstances._pathPatrol.stopPatrol()
     pathPatrolWasStarted = patrolInstances._pathPatrol.started
   }
-  if (!patrolInstances._patrol) patrolInstances._patrol = Patrol.get()
+  if (!patrolInstances._patrol) patrolInstances._patrol = Patrol.create()
   patrolInstances._patrol.started=patrolWasstarted
   patrolInstances._patrol.patrolStop()
   // patrolInstances._patrol.patrolStart()
