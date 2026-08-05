@@ -36,7 +36,8 @@ function buildPatrolCache() {
         cache.sectionsData[sectionId].whitelist = new Set(cache.sectionsData[sectionId].whitelist);
     }
 
-    initCurrentTokenAreas();
+    initTokenAreas();
+    initTokenPaths();
 }
 
 const cache = {
@@ -72,6 +73,7 @@ const cache = {
     tokenPaths: {
         "tokenUuid0": {
             step: 0,
+            graphic: null,
             path: [
                 {x: 100, y: 200},
                 {x: 100, y: 200},
@@ -82,11 +84,40 @@ const cache = {
     },
 }
 
+window.stepAllTokens = stepAllTokens;
+function stepAllTokens() {
+    for (const token of canvas.tokens.placeables) {
+        stepToken(token);
+    }
+}
+
+function stepToken(token) {
+    const path = cache.tokenPaths[token.id];
+    if (!path) return;
+    const step = path.step;
+    if (step >= path.path.length) {
+        buildNextPath(token);
+        stepToken(token);
+        return;
+    };
+    const next = path.path[step];
+
+    // const w = token.document.bounds.width;
+    // const h = token.document.bounds.height;
+
+    const dest = {
+        x: next.x - token.w / 2,
+        y: next.y - token.h / 2,
+    };
+    cache.tokenPaths[token.id].step++;
+
+    token.document.move([dest], { constrainOptions: { ignoreWalls: true } });
+}
+
 window.patrolCache = cache;
 
-function initCurrentTokenAreas() {
+function initTokenAreas() {
     cache.tokenAreas = {};
-    
     const tokens = canvas.tokens.placeables;
     for (const token of tokens) {
         // const isPatroller = token.actor?.getFlag(MODULE_ID, "isPatroller");
@@ -96,6 +127,19 @@ function initCurrentTokenAreas() {
         if (!areaId) continue;
 
         cache.tokenAreas[token.id] = areaId;
+    }
+}
+
+function initTokenPaths() {
+    cache.tokenPaths = {};
+    for (const token of canvas.tokens.placeables) {
+        // const isPatroller = token.actor?.getFlag(MODULE_ID, "isPatroller");
+        // if (!isPatroller) continue;
+
+        const areaId = cache.tokenAreas[token.id];
+        if (!areaId) continue;
+
+        buildNextPath(token);
     }
 }
 
@@ -137,7 +181,7 @@ function getNextDestination(token) {
         const cell = frontier.shift();
         cells.push({i: cell.i, j: cell.j});
 
-        for (const neighbor of canvas.grid.getAdjacentOffsets(cell)) {
+        for (const neighbor of getAdjacentOffsets(cell, { diagonals: false })) {
             const key = `${neighbor.i},${neighbor.j}`;
             if (visited.has(key)) continue;
 
@@ -145,8 +189,7 @@ function getNextDestination(token) {
             if (!cellSet.has(key)) continue;
 
             // Must not be blocked by a wall
-            
-            if (wallBetween(cell, neighbor, wallCache, {w: token.w, h: token.h})) continue;
+            if (wallBetween(cell, neighbor, wallCache)) continue;
 
             visited.add(key);
             frontier.push(neighbor);
@@ -174,24 +217,37 @@ function buildNextPath(token) {
     const path = getPathFromTo(validCells, start, destination);
 
     // DEBUG
-    if (!graphic) graphic = new PIXI.Graphics();
+    const graphic = cache.tokenPaths[token.id]?.graphic ?? new PIXI.Graphics();
+    if (!cache.tokenPaths[token.id]?.graphic) {
+        canvas.primary.addChild(graphic);
+    }
     graphic.clear();
-    graphic.lineStyle(2, 0x00ff00);
-    graphic.beginFill(0x00ff00, 0.5);
+
+    const newColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
+    graphic.lineStyle(2, newColor);
+    graphic.beginFill(newColor, 0.5);
     for (const point of path) {
         graphic.drawCircle(point.x, point.y, 10);
     }
     graphic.endFill();
-    canvas.primary.addChild(graphic);
-    // DEBUG
 
     cache.tokenPaths[token.id] = {
         step: 0,
+        graphic: graphic,
+        color: newColor,
         path: path,
     };
 }
 
 window.buildNextPath = buildNextPath;
+
+function getAdjacentOffsets(cell, options = { diagonals: true }) {
+    const allAdjacentOffsets = canvas.grid.getAdjacentOffsets(cell);
+    if (!options.diagonals) {
+        return allAdjacentOffsets.filter(offset => offset.i === cell.i || offset.j === cell.j);
+    }
+    return allAdjacentOffsets;
+}
 
 function getPathFromTo(cells, start, end) {
     const cellSet = new Set(cells.map(c => `${c.i},${c.j}`));
@@ -205,12 +261,13 @@ function getPathFromTo(cells, start, end) {
     const frontier = [start];
     visited.add(sk);
 
+    // CHECK WALLS HERE TOO
     while (frontier.length > 0) {
         const current = frontier.shift();
         const ck = `${current.i},${current.j}`;
         if (ck === ek) break;
 
-        for (const nb of canvas.grid.getAdjacentOffsets(current)) {
+        for (const nb of getAdjacentOffsets(current, { diagonals: false })) {
             const nk = `${nb.i},${nb.j}`;
             if (visited.has(nk) || !cellSet.has(nk)) continue;
             visited.add(nk);
@@ -233,6 +290,7 @@ function getPathFromTo(cells, start, end) {
         if (iterations > 100000) break;
     }
 
+    path.pop(); // Remove the starting point, as the token is already there
     return path.reverse();
 }
 
@@ -311,7 +369,7 @@ function getRandomArea(allowedAreas) {
     }
 }
 
-function wallBetween(cellA, cellB, cache, tokenDimensions = null) {
+function wallBetween(cellA, cellB, cache) {
     const keyA = `${cellA.i},${cellA.j}`;
     const keyB = `${cellB.i},${cellB.j}`;
     const cacheKey = keyA < keyB ? `${keyA}-${keyB}` : `${keyB}-${keyA}`;
@@ -325,35 +383,7 @@ function wallBetween(cellA, cellB, cache, tokenDimensions = null) {
         centerA, centerB, { type: "move" },
     );
 
-    let cornersBlocked = false;
-    if (tokenDimensions) {
-        const offsets = [
-            { x: - tokenDimensions.w / 2, y: - tokenDimensions.h / 2 },
-            { x: tokenDimensions.w / 2, y: - tokenDimensions.h / 2 },
-            { x: - tokenDimensions.w / 2, y: tokenDimensions.h / 2 },
-            { x: tokenDimensions.w / 2, y: tokenDimensions.h / 2 },
-        ];
-    
-        for (const offset of offsets) {
-            const pointA = {
-                x: centerA.x + offset.x,
-                y: centerA.y + offset.y,
-            };
-            const pointB = {
-                x: centerB.x + offset.x,
-                y: centerB.y + offset.y,
-            };
-            const collisions = CONFIG.Canvas.polygonBackends.move.testCollision(
-                pointA, pointB, { type: "move" },
-            );
-            if (collisions.length > 0) {
-                cornersBlocked = true;
-                break;
-            }
-        }
-    }
-
-    const blocked = collisions.length > 0 || cornersBlocked;
+    const blocked = collisions.length > 0;
     cache.set(cacheKey, blocked);
     return blocked;
 }
