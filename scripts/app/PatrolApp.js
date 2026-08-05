@@ -73,6 +73,8 @@ const cache = {
     tokenPaths: {
         "tokenUuid0": {
             step: 0,
+            loiter: 0,
+            retreat: 0,
             graphic: null,
             path: [
                 {x: 100, y: 200},
@@ -84,26 +86,84 @@ const cache = {
     },
 }
 
-window.stepAllTokens = stepAllTokens;
-function stepAllTokens() {
-    for (const token of canvas.tokens.placeables) {
-        stepToken(token);
+let tokensStepTask = null;
+
+window.toggleStepping = toggleStepping;
+function toggleStepping(toggle) {
+    if (toggle) {
+        if (!tokensStepTask) {
+            tokensStepTask = true;
+            stepAllTokens();
+        }
+    } else {
+        if (tokensStepTask) {
+            tokensStepTask = false;
+        }
     }
 }
+
+window.stepAllTokens = stepAllTokens;
+async function stepAllTokens() {
+    for (const token of canvas.tokens.placeables) {
+        await stepToken(token);
+        if (token.movementAnimationPromise) await token.movementAnimationPromise;
+    }
+    if (tokensStepTask) stepAllTokens();
+}
+
+const MAX_LOITER = 5;
+const MAX_RETREAT = 5;
 
 function stepToken(token) {
     const path = cache.tokenPaths[token.id];
     if (!path) return;
     const step = path.step;
+
     if (step >= path.path.length) {
         buildNextPath(token);
         stepToken(token);
         return;
     };
 
-    cache.tokenPaths[token.id].step++;
-    const next = path.path[step];
-    token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true } });
+    let next = path.path[step];
+    
+    // If next cell is occupied by a token
+    const size = canvas.dimensions.size;
+    const occupied = canvas.tokens.placeables.some(t => {
+        if (t.id === token.id) return false;
+        for (let i = 0; i < token.document.height; i++) {
+            for (let j = 0; j < token.document.width; j++) {
+                const subcell = {
+                    x: next.x + j * size + size / 2,
+                    y: next.y + i * size + size / 2,
+                }
+                if (t.bounds.contains(subcell.x, subcell.y)) return true;
+            }
+        }
+    });
+
+    if (occupied) {
+        if (path.loiter < MAX_LOITER) {
+            cache.tokenPaths[token.id].loiter++;
+            return;
+        }
+        if (path.retreat < MAX_RETREAT) {
+            cache.tokenPaths[token.id].retreat++;
+            if (path.step > 0) {
+                cache.tokenPaths[token.id].step--;
+                next = path.path[path.step];
+            } else {
+                buildNextPath(token);
+                return;
+            }
+        }
+        buildNextPath(token);
+        return;
+    } else {
+        cache.tokenPaths[token.id].step++;
+    }
+
+    return token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true } });
 }
 
 window.patrolCache = cache;
@@ -251,6 +311,8 @@ function buildNextPath(token) {
 
     cache.tokenPaths[token.id] = {
         step: 0,
+        loiter: 0,
+        retreat: 0,
         graphic: graphic,
         color: newColor,
         path: path,
