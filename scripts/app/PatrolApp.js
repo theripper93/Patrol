@@ -100,17 +100,9 @@ function stepToken(token) {
         stepToken(token);
         return;
     };
-    const next = path.path[step];
 
-    // const w = token.document.bounds.width;
-    // const h = token.document.bounds.height;
-
-    const dest = {
-        x: next.x - token.w / 2,
-        y: next.y - token.h / 2,
-    };
     cache.tokenPaths[token.id].step++;
-
+    const next = path.path[step];
     token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true } });
 }
 
