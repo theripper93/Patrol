@@ -75,6 +75,7 @@ const cache = {
             step: 0,
             loiter: 0,
             retreat: 0,
+            retreating: false,
             graphic: null,
             path: [
                 {x: 100, y: 200},
@@ -106,7 +107,7 @@ window.stepAllTokens = stepAllTokens;
 async function stepAllTokens() {
     for (const token of canvas.tokens.placeables) {
         await stepToken(token);
-        if (token.movementAnimationPromise) await token.movementAnimationPromise;
+        // if (token.movementAnimationPromise) await token.movementAnimationPromise;
     }
     if (tokensStepTask) stepAllTokens();
 }
@@ -143,24 +144,33 @@ function stepToken(token) {
     });
 
     if (occupied) {
-        if (path.loiter < MAX_LOITER) {
-            cache.tokenPaths[token.id].loiter++;
-            return;
-        }
-        if (path.retreat < MAX_RETREAT) {
-            cache.tokenPaths[token.id].retreat++;
-            if (path.step > 0) {
-                cache.tokenPaths[token.id].step--;
-                next = path.path[path.step];
-            } else {
+        if (Math.random() > 0.8) {
+            if (path.loiter > MAX_LOITER) {
                 buildNextPath(token);
                 return;
             }
+            path.loiter++;
+            return;
         }
-        buildNextPath(token);
+
+        path.retreating = !path.retreating;
+        if (path.retreat > MAX_RETREAT) {
+            buildNextPath(token);
+            return;
+        }
+        path.retreat++;
+        if (path.retreating && path.step > 0) path.step--;
         return;
+    }
+
+    if (path.retreating) {
+        if (path.step === 0) {
+            buildNextPath(token);
+            return;
+        }
+        path.step--;
     } else {
-        cache.tokenPaths[token.id].step++;
+        path.step++;
     }
 
     return token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true } });
@@ -313,6 +323,7 @@ function buildNextPath(token) {
         step: 0,
         loiter: 0,
         retreat: 0,
+        retreating: false,
         graphic: graphic,
         color: newColor,
         path: path,
