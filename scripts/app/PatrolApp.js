@@ -28,7 +28,7 @@ function buildPatrolCache() {
     for (const areaId of Object.keys(cache.areasData)) {
         cache.areasData[areaId].blacklist = new Set(cache.areasData[areaId].blacklist);
         cache.areasData[areaId].whitelist = new Set(cache.areasData[areaId].whitelist);
-        exploreRegion(areaId);
+        // exploreRegion(areaId);
     }
 
     for (const sectionId of Object.keys(cache.sectionsData)) {
@@ -111,7 +111,7 @@ function stepToken(token) {
     };
     cache.tokenPaths[token.id].step++;
 
-    token.document.move([dest], { constrainOptions: { ignoreWalls: true } });
+    token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true } });
 }
 
 window.patrolCache = cache;
@@ -166,7 +166,7 @@ function getNextDestination(token) {
     const region = canvas.scene.regions.get(areaData.regionId);
     if (!region) return;
 
-    const startOffset = canvas.grid.getOffset(token.center);
+    const startOffset = canvas.grid.getOffset({ x: token.bounds.x, y: token.bounds.y });
     const visited = new Set();
     const frontier = [startOffset];
     const wallCache = new Map();
@@ -175,7 +175,7 @@ function getNextDestination(token) {
     const startKey = `${startOffset.i},${startOffset.j}`;
     visited.add(startKey);
 
-    const cellSet = new Set(areaData.cells.map(c => `${c.i},${c.j}`));
+    // const cellSet = new Set(areaData.cells.map(c => `${c.i},${c.j}`));
 
     while (frontier.length > 0) {
         const cell = frontier.shift();
@@ -185,11 +185,15 @@ function getNextDestination(token) {
             const key = `${neighbor.i},${neighbor.j}`;
             if (visited.has(key)) continue;
 
-            // Must be inside the region polygon
-            if (!cellSet.has(key)) continue;
+            // // Must be inside the region polygon
+            const center = canvas.grid.getCenterPoint(neighbor);
+            if (!region.polygonTree.testPoint(center)) continue;
 
             // Must not be blocked by a wall
             if (wallBetween(cell, neighbor, wallCache)) continue;
+
+            // Must have enough space for the token to fit
+            if (!tokenFits(token, neighbor, region, wallCache)) continue;
 
             visited.add(key);
             frontier.push(neighbor);
@@ -202,19 +206,38 @@ function getNextDestination(token) {
     }
 }
 
+function tokenFits(token, cell, region, wallCache) {
+    const height = token.document.height;
+    const width = token.document.width;
+
+    if (height === 1 && width === 1) return true;
+
+    for (let i = 0; i < height; i++) {
+        for (let j = 0; j < width; j++) {
+            const subcell = { i: cell.i + i, j: cell.j + j };
+            if (!region.polygonTree.testPoint(canvas.grid.getCenterPoint(subcell))) return false;
+            if (j < width - 1 && wallBetween(subcell, { i: subcell.i, j: subcell.j + 1 }, wallCache)) return false;
+            if (i < height - 1 && wallBetween(subcell, { i: subcell.i + 1, j: subcell.j }, wallCache)) return false;
+        }
+    }
+
+    return true;
+}
+
 let graphic = null;
 function buildNextPath(token) {
     const areaId = cache.tokenAreas[token.id];
     if (!areaId) return;
 
-    const cells = cache.areasData[areaId].cells;
-    if (!cells || !cells.length) return;
+    // const cells = cache.areasData[areaId].cells;
+    // if (!cells || !cells.length) return;
 
-    const {destination, validCells} = getNextDestination(token);
+    const { destination, validCells } = getNextDestination(token);
     if (!destination) return;
 
-    const start = canvas.grid.getOffset(token.center);
-    const path = getPathFromTo(validCells, start, destination);
+    const start = canvas.grid.getOffset({ x: token.bounds.x, y: token.bounds.y });
+    const region = canvas.scene.regions.get(cache.areasData[areaId].regionId);
+    const path = getPathFromTo(token, region, validCells, start, destination);
 
     // DEBUG
     const graphic = cache.tokenPaths[token.id]?.graphic ?? new PIXI.Graphics();
@@ -223,11 +246,14 @@ function buildNextPath(token) {
     }
     graphic.clear();
 
+    const width = token.w;
+    const height = token.h;
+
     const newColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
     graphic.lineStyle(2, newColor);
     graphic.beginFill(newColor, 0.5);
     for (const point of path) {
-        graphic.drawCircle(point.x, point.y, 10);
+        graphic.drawCircle(point.x + width / 2, point.y + height / 2, 10);
     }
     graphic.endFill();
 
@@ -249,7 +275,7 @@ function getAdjacentOffsets(cell, options = { diagonals: true }) {
     return allAdjacentOffsets;
 }
 
-function getPathFromTo(cells, start, end) {
+function getPathFromTo(token, region, cells, start, end) {
     const cellSet = new Set(cells.map(c => `${c.i},${c.j}`));
     const sk = `${start.i},${start.j}`;
     const ek = `${end.i},${end.j}`;
@@ -259,6 +285,7 @@ function getPathFromTo(cells, start, end) {
     const parent = new Map();
     const visited = new Set();
     const frontier = [start];
+    const wallCache = new Map();
     visited.add(sk);
 
     // CHECK WALLS HERE TOO
@@ -269,7 +296,12 @@ function getPathFromTo(cells, start, end) {
 
         for (const nb of getAdjacentOffsets(current, { diagonals: false })) {
             const nk = `${nb.i},${nb.j}`;
-            if (visited.has(nk) || !cellSet.has(nk)) continue;
+
+            if (visited.has(nk)) continue;
+            if (!cellSet.has(nk)) continue;
+            if (wallBetween(current, nb, wallCache)) continue;
+            if (!tokenFits(token, nb, region, wallCache)) continue;
+
             visited.add(nk);
             parent.set(nk, {i: current.i, j: current.j});
             frontier.push(nb);
@@ -282,7 +314,7 @@ function getPathFromTo(cells, start, end) {
     let cur = end;
     let iterations = 0;
     while (true) {
-        path.push(canvas.grid.getCenterPoint(cur));
+        path.push(canvas.grid.getTopLeftPoint(cur));
         const ck = `${cur.i},${cur.j}`;
         if (ck === sk) break;
         cur = parent.get(ck);
@@ -388,63 +420,63 @@ function wallBetween(cellA, cellB, cache) {
     return blocked;
 }
 
-window.exploreRegion = exploreRegion;
+// window.exploreRegion = exploreRegion;
 
-function exploreRegion(areaId) {
-    const areaData = cache.areasData[areaId];
-    if (!areaData) return;
+// function exploreRegion(areaId) {
+//     const areaData = cache.areasData[areaId];
+//     if (!areaData) return;
 
-    const region = canvas.scene.regions.get(areaData.regionId);
-    if (!region) return;
+//     const region = canvas.scene.regions.get(areaData.regionId);
+//     if (!region) return;
 
-    // const region = canvas.scene.regions.get(areaId);
+//     // const region = canvas.scene.regions.get(areaId);
 
-    // Find a starting cell inside the region polygon (handles holes)
-    const [i0, j0, i1, j1] = canvas.grid.getOffsetRange(region.bounds);
-    let startOffset = null;
+//     // Find a starting cell inside the region polygon (handles holes)
+//     const [i0, j0, i1, j1] = canvas.grid.getOffsetRange(region.bounds);
+//     let startOffset = null;
 
-    for (let i = i0; i < i1; i++) {
-        for (let j = j0; j < j1; j++) {
-            const center = canvas.grid.getCenterPoint({i, j});
-            if (region.polygonTree.testPoint(center, 0.75)) {
-                startOffset = {i, j};
-                break;
-            }
-        }
-        if (startOffset) break;
-    }
+//     for (let i = i0; i < i1; i++) {
+//         for (let j = j0; j < j1; j++) {
+//             const center = canvas.grid.getCenterPoint({i, j});
+//             if (region.polygonTree.testPoint(center, 0.75)) {
+//                 startOffset = {i, j};
+//                 break;
+//             }
+//         }
+//         if (startOffset) break;
+//     }
 
-    if (!startOffset) return; // No cell inside the polygon
+//     if (!startOffset) return; // No cell inside the polygon
 
-    // BFS flood fill bounded by polygon containment and walls
-    const visited = new Set();
-    const frontier = [startOffset];
-    const wallCache = new Map();
-    const cells = [];
+//     // BFS flood fill bounded by polygon containment and walls
+//     const visited = new Set();
+//     const frontier = [startOffset];
+//     const wallCache = new Map();
+//     const cells = [];
 
-    const startKey = `${startOffset.i},${startOffset.j}`;
-    visited.add(startKey);
+//     const startKey = `${startOffset.i},${startOffset.j}`;
+//     visited.add(startKey);
 
-    while (frontier.length > 0) {
-        const cell = frontier.shift();
-        cells.push({i: cell.i, j: cell.j});
+//     while (frontier.length > 0) {
+//         const cell = frontier.shift();
+//         cells.push({i: cell.i, j: cell.j});
 
-        for (const neighbor of canvas.grid.getAdjacentOffsets(cell)) {
-            const key = `${neighbor.i},${neighbor.j}`;
-            if (visited.has(key)) continue;
+//         for (const neighbor of canvas.grid.getAdjacentOffsets(cell)) {
+//             const key = `${neighbor.i},${neighbor.j}`;
+//             if (visited.has(key)) continue;
 
-            // Must be inside the region polygon
-            const center = canvas.grid.getCenterPoint(neighbor);
-            if (!region.polygonTree.testPoint(center)) continue;
+//             // Must be inside the region polygon
+//             const center = canvas.grid.getCenterPoint(neighbor);
+//             if (!region.polygonTree.testPoint(center)) continue;
 
-            // Must not be blocked by a wall
-            // if (wallBetween(cell, neighbor, wallCache)) continue;
+//             // Must not be blocked by a wall
+//             // if (wallBetween(cell, neighbor, wallCache)) continue;
 
-            visited.add(key);
-            frontier.push(neighbor);
-        }
-    }
+//             visited.add(key);
+//             frontier.push(neighbor);
+//         }
+//     }
 
-    // console.log("cells", cells);
-    areaData.cells = cells;
-}
+//     // console.log("cells", cells);
+//     areaData.cells = cells;
+// }
