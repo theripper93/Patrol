@@ -26,7 +26,14 @@ function buildPatrolCache() {
     cache.areasData = getSetting("areasData");
 
     for (const areaId of Object.keys(cache.areasData)) {
+        cache.areasData[areaId].blacklist = new Set(cache.areasData[areaId].blacklist);
+        cache.areasData[areaId].whitelist = new Set(cache.areasData[areaId].whitelist);
         exploreRegion(areaId);
+    }
+
+    for (const sectionId of Object.keys(cache.sectionsData)) {
+        cache.sectionsData[sectionId].blacklist = new Set(cache.sectionsData[sectionId].blacklist);
+        cache.sectionsData[sectionId].whitelist = new Set(cache.sectionsData[sectionId].whitelist);
     }
 
     initCurrentTokenAreas();
@@ -93,7 +100,11 @@ function initCurrentTokenAreas() {
 }
 
 function getAreaForToken(token) {
-    for (const [areaId, areaData] of Object.entries(cache.areasData)) {
+    const allowedAreasIds = getAllowedAreas(null, token.id);
+    if (!allowedAreasIds.length) return;
+
+    for (const areaId of allowedAreasIds) {
+        const areaData = cache.areasData[areaId];
         const region = canvas.scene.regions.get(areaData.regionId);
         if (!region) continue;
 
@@ -102,9 +113,53 @@ function getAreaForToken(token) {
 }
 
 function getNextDestination(token) {
+    const areaId = cache.tokenAreas[token.id];
+    if (!areaId) return;
+
+    const areaData = cache.areasData[areaId];
+    if (!areaData) return;
+
+    const region = canvas.scene.regions.get(areaData.regionId);
+    if (!region) return;
+
+    const startOffset = canvas.grid.getOffset(token.center);
+    const visited = new Set();
+    const frontier = [startOffset];
+    const wallCache = new Map();
+    const cells = [];
     
+    const startKey = `${startOffset.i},${startOffset.j}`;
+    visited.add(startKey);
+
+    const cellSet = new Set(areaData.cells.map(c => `${c.i},${c.j}`));
+
+    while (frontier.length > 0) {
+        const cell = frontier.shift();
+        cells.push({i: cell.i, j: cell.j});
+
+        for (const neighbor of canvas.grid.getAdjacentOffsets(cell)) {
+            const key = `${neighbor.i},${neighbor.j}`;
+            if (visited.has(key)) continue;
+
+            // Must be inside the region polygon
+            if (!cellSet.has(key)) continue;
+
+            // Must not be blocked by a wall
+            
+            if (wallBetween(cell, neighbor, wallCache, {w: token.w, h: token.h})) continue;
+
+            visited.add(key);
+            frontier.push(neighbor);
+        }
+    }
+
+    return {
+        destination: cells[Math.floor(Math.random() * cells.length)],
+        validCells: cells
+    }
 }
 
+let graphic = null;
 function buildNextPath(token) {
     const areaId = cache.tokenAreas[token.id];
     if (!areaId) return;
@@ -112,20 +167,23 @@ function buildNextPath(token) {
     const cells = cache.areasData[areaId].cells;
     if (!cells || !cells.length) return;
 
-    const randomIndex = Math.floor(Math.random() * cells.length);
-    const destination = cells[randomIndex];
+    const {destination, validCells} = getNextDestination(token);
+    if (!destination) return;
 
     const start = canvas.grid.getOffset(token.center);
-    const path = getPathFromTo(cells, start, destination);
+    const path = getPathFromTo(validCells, start, destination);
 
-    const graphic = new PIXI.Graphics();
+    // DEBUG
+    if (!graphic) graphic = new PIXI.Graphics();
+    graphic.clear();
     graphic.lineStyle(2, 0x00ff00);
     graphic.beginFill(0x00ff00, 0.5);
     for (const point of path) {
-        graphic.drawCircle(point.x, point.y, 2);
+        graphic.drawCircle(point.x, point.y, 10);
     }
     graphic.endFill();
-    token.addChild(graphic);
+    canvas.primary.addChild(graphic);
+    // DEBUG
 
     cache.tokenPaths[token.id] = {
         step: 0,
@@ -156,7 +214,7 @@ function getPathFromTo(cells, start, end) {
             const nk = `${nb.i},${nb.j}`;
             if (visited.has(nk) || !cellSet.has(nk)) continue;
             visited.add(nk);
-            parent.set(nk, {i: nb.i, j: nb.j});
+            parent.set(nk, {i: current.i, j: current.j});
             frontier.push(nb);
         }
     }
@@ -165,11 +223,14 @@ function getPathFromTo(cells, start, end) {
 
     const path = [];
     let cur = end;
+    let iterations = 0;
     while (true) {
         path.push(canvas.grid.getCenterPoint(cur));
         const ck = `${cur.i},${cur.j}`;
         if (ck === sk) break;
         cur = parent.get(ck);
+        iterations++;
+        if (iterations > 100000) break;
     }
 
     return path.reverse();
@@ -182,7 +243,7 @@ function getNextArea(token) {
     const currentTokenArea = cache.tokenAreas[token.id];
     if (!currentTokenArea) return;
 
-    const allowedAreas = getAllowedAreas(currentTokenArea);
+    const allowedAreas = getAllowedAreas(currentTokenArea, token.id);
     if (!allowedAreas.length) return currentTokenArea;
 
     const selectedArea = getRandomArea(allowedAreas);
@@ -191,26 +252,25 @@ function getNextArea(token) {
     return selectedArea;
 }
 
-function getAllowedAreas(areaId) {
+function getAllowedAreas(areaId, tokenId) {
     // const areaData = getSetting("areasData");
-    const connectedAreasIds = cache.areasData[areaId]?.connectedAreas;
+    const connectedAreasIds = areaId ? cache.areasData[areaId]?.connectedAreas : Object.keys(cache.areasData);
     if (!connectedAreasIds) return [];
 
     // const sectionsData = getSetting("sectionsData");
 
-    const userId = game.user.id;
     const allowedAreas = [];
     for (const connectedAreaId of connectedAreasIds) {
         const connectedArea = cache.areasData[connectedAreaId];
 
         // If token is blacklisted, skip this area
         const areaBlacklist = connectedArea.blacklist;
-        const isBlacklistedInArea = areaBlacklist.has(userId);
+        const isBlacklistedInArea = areaBlacklist.has(tokenId);
         if (isBlacklistedInArea) continue;
 
         // If a whitelist exists, check if the token is whitelisted
         const areaWhitelist = connectedArea.whitelist;
-        const isWhitelistedInArea = areaWhitelist.size === 0 || areaWhitelist.has(userId);
+        const isWhitelistedInArea = areaWhitelist.size === 0 || areaWhitelist.has(tokenId);
         if (isWhitelistedInArea) {
             allowedAreas.push(connectedAreaId);
             continue;
@@ -226,11 +286,11 @@ function getAllowedAreas(areaId) {
         };
 
         const sectionBlacklist = sectionData.blacklist;
-        const isBlacklistedInSection = sectionBlacklist.has(userId);
+        const isBlacklistedInSection = sectionBlacklist.has(tokenId);
         if (isBlacklistedInSection) continue;
 
         const sectionWhitelist = sectionData.whitelist;
-        const isWhitelistedInSection = sectionWhitelist.size === 0 || sectionWhitelist.has(userId);
+        const isWhitelistedInSection = sectionWhitelist.size === 0 || sectionWhitelist.has(tokenId);
         if (isWhitelistedInSection) {
             allowedAreas.push(connectedAreaId);
             continue;
@@ -251,7 +311,7 @@ function getRandomArea(allowedAreas) {
     }
 }
 
-function wallBetween(cellA, cellB, cache) {
+function wallBetween(cellA, cellB, cache, tokenDimensions = null) {
     const keyA = `${cellA.i},${cellA.j}`;
     const keyB = `${cellB.i},${cellB.j}`;
     const cacheKey = keyA < keyB ? `${keyA}-${keyB}` : `${keyB}-${keyA}`;
@@ -261,11 +321,39 @@ function wallBetween(cellA, cellB, cache) {
     const centerA = canvas.grid.getCenterPoint(cellA);
     const centerB = canvas.grid.getCenterPoint(cellB);
 
-    const collisions = CONFIG.Canvas.polygonBackends.sight.testCollision(
-        centerA, centerB, { type: "sight" },
+    const collisions = CONFIG.Canvas.polygonBackends.move.testCollision(
+        centerA, centerB, { type: "move" },
     );
 
-    const blocked = collisions.length > 0;
+    let cornersBlocked = false;
+    if (tokenDimensions) {
+        const offsets = [
+            { x: - tokenDimensions.w / 2, y: - tokenDimensions.h / 2 },
+            { x: tokenDimensions.w / 2, y: - tokenDimensions.h / 2 },
+            { x: - tokenDimensions.w / 2, y: tokenDimensions.h / 2 },
+            { x: tokenDimensions.w / 2, y: tokenDimensions.h / 2 },
+        ];
+    
+        for (const offset of offsets) {
+            const pointA = {
+                x: centerA.x + offset.x,
+                y: centerA.y + offset.y,
+            };
+            const pointB = {
+                x: centerB.x + offset.x,
+                y: centerB.y + offset.y,
+            };
+            const collisions = CONFIG.Canvas.polygonBackends.move.testCollision(
+                pointA, pointB, { type: "move" },
+            );
+            if (collisions.length > 0) {
+                cornersBlocked = true;
+                break;
+            }
+        }
+    }
+
+    const blocked = collisions.length > 0 || cornersBlocked;
     cache.set(cacheKey, blocked);
     return blocked;
 }
