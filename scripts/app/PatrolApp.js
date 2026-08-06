@@ -2,6 +2,8 @@ import { MODULE_ID } from "../main.js";
 import { getSetting } from "../settings.js";
 import { HandlebarsApplication } from "../lib/utils.js";
 
+const TOKENS_OPEN_DOORS = true;
+
 export class PatrolApp extends HandlebarsApplication {
     
     async _prepareContext(options) {
@@ -179,6 +181,19 @@ function stepToken(token) {
         path.step++;
     }
 
+    if (path.lastDoor && path.lastDoor.isOpen && TOKENS_OPEN_DOORS) {
+        const chanceToCloseDoor = Math.random() < 0.5;
+        if (chanceToCloseDoor) path.lastDoor.update({ ds: CONST.WALL_DOOR_STATES.CLOSED });
+        path.lastDoor = null;
+    }
+
+    if (next.door) {
+        if (TOKENS_OPEN_DOORS) {
+            if (!next.door.isOpen) next.door.update({ ds: CONST.WALL_DOOR_STATES.OPEN });
+            path.lastDoor = next.door;
+        }
+    }
+
     return token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true } });
 }
 
@@ -258,7 +273,7 @@ function getNextDestination(token) {
             if (!region.polygonTree.testPoint(center)) continue;
 
             // Must not be blocked by a wall
-            if (wallBetween(cell, neighbor, wallCache)) continue;
+            if (wallBetween(cell, neighbor, wallCache).blocked) continue;
 
             // Must have enough space for the token to fit
             if (!tokenFits(token, neighbor, region, wallCache)) continue;
@@ -284,8 +299,8 @@ function tokenFits(token, cell, region, wallCache) {
         for (let j = 0; j < width; j++) {
             const subcell = { i: cell.i + i, j: cell.j + j };
             if (!region.polygonTree.testPoint(canvas.grid.getCenterPoint(subcell))) return false;
-            if (j < width - 1 && wallBetween(subcell, { i: subcell.i, j: subcell.j + 1 }, wallCache)) return false;
-            if (i < height - 1 && wallBetween(subcell, { i: subcell.i + 1, j: subcell.j }, wallCache)) return false;
+            if (j < width - 1 && wallBetween(subcell, { i: subcell.i, j: subcell.j + 1 }, wallCache).blocked) return false;
+            if (i < height - 1 && wallBetween(subcell, { i: subcell.i + 1, j: subcell.j }, wallCache).blocked) return false;
         }
     }
 
@@ -370,11 +385,13 @@ function getPathFromTo(token, region, cells, start, end) {
 
             if (visited.has(nk)) continue;
             if (!cellSet.has(nk)) continue;
-            if (wallBetween(current, nb, wallCache)) continue;
+            const wall = wallBetween(current, nb, wallCache);
+            if (wall.blocked) continue;
+            // if (wallBetween(current, nb, wallCache)) continue;
             if (!tokenFits(token, nb, region, wallCache)) continue;
 
             visited.add(nk);
-            parent.set(nk, {i: current.i, j: current.j});
+            parent.set(nk, {i: current.i, j: current.j, door: wall.door });
             frontier.push(nb);
         }
     }
@@ -385,7 +402,8 @@ function getPathFromTo(token, region, cells, start, end) {
     let cur = end;
     let iterations = 0;
     while (true) {
-        path.push(canvas.grid.getTopLeftPoint(cur));
+        const cell = canvas.grid.getTopLeftPoint(cur);
+        path.push({...cell, door: cur.door });
         const ck = `${cur.i},${cur.j}`;
         if (ck === sk) break;
         cur = parent.get(ck);
@@ -486,68 +504,26 @@ function wallBetween(cellA, cellB, cache) {
         centerA, centerB, { type: "move" },
     );
 
-    const blocked = collisions.length > 0;
-    cache.set(cacheKey, blocked);
-    return blocked;
+    const result = { };
+
+    for (const vertex of collisions) {
+        for (const edge of vertex.edges) {
+            const wall = edge.object;
+            if (!wall) { result.blocked = true; continue; }
+            if (wall.isDoor) {
+                console.log(wall);
+                result.door = wall;
+                // result.isDoor = true;
+                // result.isOpen = wall.isOpen;
+                // result.isLocked = wall.ds === CONST.WALL_DOOR_STATES.LOCKED;
+                if (!wall.isOpen && !TOKENS_OPEN_DOORS) result.blocked = true; // closed/locked doors block
+            } else {
+                result.blocked = true;
+            }
+        }
+    }
+
+    // Only cache non-door results (door state can change)
+    if (!result.door) cache.set(cacheKey, result);
+    return result;
 }
-
-// window.exploreRegion = exploreRegion;
-
-// function exploreRegion(areaId) {
-//     const areaData = cache.areasData[areaId];
-//     if (!areaData) return;
-
-//     const region = canvas.scene.regions.get(areaData.regionId);
-//     if (!region) return;
-
-//     // const region = canvas.scene.regions.get(areaId);
-
-//     // Find a starting cell inside the region polygon (handles holes)
-//     const [i0, j0, i1, j1] = canvas.grid.getOffsetRange(region.bounds);
-//     let startOffset = null;
-
-//     for (let i = i0; i < i1; i++) {
-//         for (let j = j0; j < j1; j++) {
-//             const center = canvas.grid.getCenterPoint({i, j});
-//             if (region.polygonTree.testPoint(center, 0.75)) {
-//                 startOffset = {i, j};
-//                 break;
-//             }
-//         }
-//         if (startOffset) break;
-//     }
-
-//     if (!startOffset) return; // No cell inside the polygon
-
-//     // BFS flood fill bounded by polygon containment and walls
-//     const visited = new Set();
-//     const frontier = [startOffset];
-//     const wallCache = new Map();
-//     const cells = [];
-
-//     const startKey = `${startOffset.i},${startOffset.j}`;
-//     visited.add(startKey);
-
-//     while (frontier.length > 0) {
-//         const cell = frontier.shift();
-//         cells.push({i: cell.i, j: cell.j});
-
-//         for (const neighbor of canvas.grid.getAdjacentOffsets(cell)) {
-//             const key = `${neighbor.i},${neighbor.j}`;
-//             if (visited.has(key)) continue;
-
-//             // Must be inside the region polygon
-//             const center = canvas.grid.getCenterPoint(neighbor);
-//             if (!region.polygonTree.testPoint(center)) continue;
-
-//             // Must not be blocked by a wall
-//             // if (wallBetween(cell, neighbor, wallCache)) continue;
-
-//             visited.add(key);
-//             frontier.push(neighbor);
-//         }
-//     }
-
-//     // console.log("cells", cells);
-//     areaData.cells = cells;
-// }
