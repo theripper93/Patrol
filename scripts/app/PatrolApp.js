@@ -128,39 +128,45 @@ function stepToken(token) {
 
     let next = path.path[step];
     
-    // If next cell is occupied by a token
-    const size = canvas.dimensions.size;
-    const occupied = canvas.tokens.placeables.some(t => {
-        if (t.id === token.id) return false;
-        for (let i = 0; i < token.document.height; i++) {
-            for (let j = 0; j < token.document.width; j++) {
-                const subcell = {
-                    x: next.x + j * size + size / 2,
-                    y: next.y + i * size + size / 2,
+    const checkOccupied = true;
+    if (checkOccupied) {
+        const size = canvas.dimensions.size;
+        const occupied = canvas.tokens.placeables.some(t => {
+            if (t.id === token.id) return false;
+            for (let i = 0; i < token.document.height; i++) {
+                for (let j = 0; j < token.document.width; j++) {
+                    const subcell = {
+                        x: next.x + j * size + size / 2,
+                        y: next.y + i * size + size / 2,
+                    }
+                    if (t.bounds.contains(subcell.x, subcell.y)) return true;
                 }
-                if (t.bounds.contains(subcell.x, subcell.y)) return true;
             }
-        }
-    });
-
-    if (occupied) {
-        if (Math.random() > 0.8) {
-            if (path.loiter > MAX_LOITER) {
+        });
+    
+        const CHANCE_TO_OCCUPIED = 0.5;
+        const CHANCE_TO_LOITER = 0.8;
+    
+        if (occupied && Math.random() < CHANCE_TO_OCCUPIED) {
+            if (Math.random() < CHANCE_TO_LOITER) {
+                if (path.loiter > MAX_LOITER) {
+                    buildNextPath(token);
+                    return;
+                }
+                path.loiter++;
+                return;
+            }
+    
+            path.retreating = !path.retreating;
+            if (path.retreat > MAX_RETREAT) {
                 buildNextPath(token);
                 return;
             }
-            path.loiter++;
+            path.retreat++;
+            if (path.retreating && path.step > 0) path.step--;
+            stepToken(token);
             return;
         }
-
-        path.retreating = !path.retreating;
-        if (path.retreat > MAX_RETREAT) {
-            buildNextPath(token);
-            return;
-        }
-        path.retreat++;
-        if (path.retreating && path.step > 0) path.step--;
-        return;
     }
 
     if (path.retreating) {
