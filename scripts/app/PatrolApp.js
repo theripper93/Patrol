@@ -69,9 +69,6 @@ const cache = {
         "tokenUuid1": "areaUuid1",
         // ...
     },
-    tokenDestinations: {
-        "tokenUuid0": {x: 100, y: 200},
-    },
     tokenPaths: {
         "tokenUuid0": {
             step: 0,
@@ -133,7 +130,7 @@ function stepToken(token) {
     const checkOccupied = true;
     if (checkOccupied) {
         const size = canvas.dimensions.size;
-        const occupied = canvas.tokens.placeables.some(t => {
+        let occupied = canvas.tokens.placeables.find(t => {
             if (t.id === token.id) return false;
             for (let i = 0; i < token.document.height; i++) {
                 for (let j = 0; j < token.document.width; j++) {
@@ -145,11 +142,16 @@ function stepToken(token) {
                 }
             }
         });
+
+        if (occupied) {
+            const nextOccupiedPath = cache.tokenPaths[occupied.id];
+            const nextOccupiedCell = nextOccupiedPath?.path[nextOccupiedPath?.step]
+            if (nextOccupiedCell && token.bounds.contains(nextOccupiedCell.x, nextOccupiedCell.y)) occupied = null;
+        }
     
-        const CHANCE_TO_OCCUPIED = 0.5;
         const CHANCE_TO_LOITER = 0.8;
     
-        if (occupied && Math.random() < CHANCE_TO_OCCUPIED) {
+        if (occupied) {
             if (Math.random() < CHANCE_TO_LOITER) {
                 if (path.loiter > MAX_LOITER) {
                     buildNextPath(token);
@@ -501,7 +503,7 @@ function wallBetween(cellA, cellB, cache) {
     const centerB = canvas.grid.getCenterPoint(cellB);
 
     const collisions = CONFIG.Canvas.polygonBackends.move.testCollision(
-        centerA, centerB, { type: "move" },
+        centerA, centerB, { type: "move", edgeTypes: { wall: { mode: 2 } } },
     );
 
     const result = { };
@@ -511,7 +513,6 @@ function wallBetween(cellA, cellB, cache) {
             const wall = edge.object;
             if (!wall) { result.blocked = true; continue; }
             if (wall.isDoor) {
-                console.log(wall);
                 result.door = wall;
                 // result.isDoor = true;
                 // result.isOpen = wall.isOpen;
