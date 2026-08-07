@@ -42,6 +42,88 @@ function buildPatrolCache() {
     initTokenPaths();
 }
 
+class Patrol {
+
+}
+
+class PatrolToken {
+    constructor(token, options = {}) {
+        this.#token = token;
+    }
+
+    #token = null;
+    #loiterCount = 0;
+    #state = PatrolToken.STATES.STOPPED;
+    #path = [];
+
+    static STATES = {
+        STOPPED: 0,
+        LOITERING: 1,
+        PATROLLING: 2,
+        ALERTED: 3,
+        MOVING_TO_NEW_AREA: 4,
+    }
+
+    get token() {
+        return this.#token;
+    }
+
+    get state() {
+        return this.#state;
+    }
+
+    set state(newState) {
+        if (!Object.values(PatrolToken.STATES).includes(newState)) {
+            throw new Error(`Invalid state: ${newState}`);
+        }
+        this.#state = newState;
+        this.onStateChange(newState);
+    }
+
+    get currentStepIndex() {
+        return 1
+    }
+
+    get currentStep() {
+        return this.#path[this.currentStepIndex];
+    }
+
+    get nextStep() {
+        return this.#path[this.currentStepIndex + 1];
+    }
+
+    get previousStep() {
+        return this.#path[this.currentStepIndex - 1];
+    }
+
+    onStateChange(newState) {
+        // Handle state change logic here
+        switch (newState) {
+            case PatrolToken.STATES.STOPPED:
+                // Logic for when the token stops
+                break;
+            case PatrolToken.STATES.LOITERING:
+                // Logic for when the token is loitering
+                break;
+            case PatrolToken.STATES.PATROLLING:
+                // Logic for when the token is patrolling
+                break;
+            case PatrolToken.STATES.ALERTED:
+                // Logic for when the token is alerted
+                break;
+        }
+    }
+
+    async step() {
+        if(this.#state === PatrolToken.STATES.STOPPED) return console.log("Token is stopped, cannot step.", this);
+        // Logic to move the token along its path based on its current state
+    }
+
+    computePath(){
+        // Logic to compute the path for the token based on its area and allowed areas
+    }
+}
+
 const cache = {
     areasData: {
         "areaUuid0": {
