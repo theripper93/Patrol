@@ -24,37 +24,90 @@ export class PatrolApp extends HandlebarsApplication {
 Hooks.on("ready", buildPatrolCache);
 
 function buildPatrolCache() {
-    cache.sectionsData = getSetting("sectionsData");
-    cache.areasData = getSetting("areasData");
-
-    for (const areaId of Object.keys(cache.areasData)) {
-        cache.areasData[areaId].blacklist = new Set(cache.areasData[areaId].blacklist);
-        cache.areasData[areaId].whitelist = new Set(cache.areasData[areaId].whitelist);
-        // exploreRegion(areaId);
-    }
-
-    for (const sectionId of Object.keys(cache.sectionsData)) {
-        cache.sectionsData[sectionId].blacklist = new Set(cache.sectionsData[sectionId].blacklist);
-        cache.sectionsData[sectionId].whitelist = new Set(cache.sectionsData[sectionId].whitelist);
-    }
-
-    initTokenAreas();
-    initTokenPaths();
+    
 }
 
 class Patrol {
+    constructor() {
+        this.#patrolTokens = new Map();
+    }
 
+    clearTokens() {
+        this.#patrolTokens.clear();
+    }
+
+    init() {
+        cache.sectionsData = getSetting("sectionsData");
+        cache.areasData = getSetting("areasData");
+
+        for (const areaId of Object.keys(cache.areasData)) {
+            cache.areasData[areaId].blacklist = new Set(cache.areasData[areaId].blacklist);
+            cache.areasData[areaId].whitelist = new Set(cache.areasData[areaId].whitelist);
+            // exploreRegion(areaId);
+        }
+
+        for (const sectionId of Object.keys(cache.sectionsData)) {
+            cache.sectionsData[sectionId].blacklist = new Set(cache.sectionsData[sectionId].blacklist);
+            cache.sectionsData[sectionId].whitelist = new Set(cache.sectionsData[sectionId].whitelist);
+        }
+
+        // this.initTokenAreas();
+        this.initTokenPaths();
+    }
+
+    initTokens() {
+        this.clearTokens();
+        for (const token of canvas.tokens.placeables) {
+            // const isPatroller = token.actor?.getFlag(MODULE_ID, "isPatroller");
+            // if (!isPatroller) continue;
+
+            const newPatrolToken = new PatrolToken(token);
+            newPatrolToken.initArea();
+            this.#patrolTokens.set(token.document, newPatrolToken);
+
+        }
+    }
+
+    initTokenAreas() {
+        cache.tokenAreas = {};
+        const tokens = canvas.tokens.placeables;
+        for (const token of tokens) {
+            // const isPatroller = token.actor?.getFlag(MODULE_ID, "isPatroller");
+            // if (!isPatroller) continue;
+
+            const areaId = getAreaForToken(token);
+            if (!areaId) continue;
+
+            cache.tokenAreas[token.id] = areaId;
+        }
+    }
+
+    initTokenPaths() {
+        cache.tokenPaths = {};
+        for (const token of canvas.tokens.placeables) {
+            // const isPatroller = token.actor?.getFlag(MODULE_ID, "isPatroller");
+            // if (!isPatroller) continue;
+
+            const areaId = cache.tokenAreas[token.id];
+            if (!areaId) continue;
+
+            buildNextPath(token);
+        }
+    }
 }
 
 class PatrolToken {
     constructor(token, options = {}) {
         this.#token = token;
+        this.#area = this.getCurrentArea();
+        this.#pathGraphic = new PIXI.Graphics();
     }
 
     #token = null;
     #loiterCount = 0;
     #state = PatrolToken.STATES.STOPPED;
     #path = [];
+    #area = null;
 
     static STATES = {
         STOPPED: 0,
@@ -66,6 +119,10 @@ class PatrolToken {
 
     get token() {
         return this.#token;
+    }
+
+    get area() {
+        return this.#area;
     }
 
     get state() {
@@ -119,8 +176,133 @@ class PatrolToken {
         // Logic to move the token along its path based on its current state
     }
 
+    getCurrentArea() {
+        const allowedAreasIds = this.getAllowedAreas(null, this.token.id);
+        if (!allowedAreasIds.length) return;
+
+        for (const areaId of allowedAreasIds) {
+            const areaData = cache.areasData[areaId];
+            const region = canvas.scene.regions.get(areaData.regionId);
+            if (!region) continue;
+
+            if (region.polygonTree.testPoint(this.token.center)) return areaId;
+        }
+    }
+
+    getNextArea() {
+        const isPatroller = this.token.actor?.getFlag(MODULE_ID, "isPatroller");
+        if (!isPatroller) return;
+
+        const currentTokenArea = cache.tokenAreas[this.token.id];
+        if (!currentTokenArea) return;
+
+        const allowedAreas = this.getAllowedAreas(currentTokenArea, this.token.id);
+        if (!allowedAreas.length) return currentTokenArea;
+
+        const selectedArea = this.getRandomArea(allowedAreas);
+        cache.tokenAreas[this.token.id] = selectedArea;
+
+        return selectedArea;
+    }
+
+    getRandomArea(allowedAreas) {
+        const total = Object.values(allowedAreas).reduce((sum, value) => sum + value.weight, 0);
+        let rand = Math.random() * total;
+        for (const [areaId, weight] of Object.entries(allowedAreas)) {
+            rand -= weight;
+            if (rand <= 0) return areaId;
+        }
+    }
+
+    getAllowedAreas(areaId, tokenId) {
+        // const areaData = getSetting("areasData");
+        const connectedAreasIds = areaId ? cache.areasData[areaId]?.connectedAreas : Object.keys(cache.areasData);
+        if (!connectedAreasIds) return [];
+
+        // const sectionsData = getSetting("sectionsData");
+
+        const allowedAreas = [];
+        for (const connectedAreaId of connectedAreasIds) {
+            const connectedArea = cache.areasData[connectedAreaId];
+
+            // If token is blacklisted, skip this area
+            const areaBlacklist = connectedArea.blacklist;
+            const isBlacklistedInArea = areaBlacklist.has(tokenId);
+            if (isBlacklistedInArea) continue;
+
+            // If a whitelist exists, check if the token is whitelisted
+            const areaWhitelist = connectedArea.whitelist;
+            const isWhitelistedInArea = areaWhitelist.size === 0 || areaWhitelist.has(tokenId);
+            if (isWhitelistedInArea) {
+                allowedAreas.push(connectedAreaId);
+                continue;
+            }
+
+            // If a section exists, check if the token is blacklisted or whitelisted in the section
+            // If this area is not in a section, allow the token to enter it as it passed the previous checks
+            const sectionId = connectedArea.section;
+            const sectionData = cache.sectionsData[sectionId];
+            if (!sectionData) {
+                allowedAreas.push(connectedAreaId);
+                continue;
+            };
+
+            const sectionBlacklist = sectionData.blacklist;
+            const isBlacklistedInSection = sectionBlacklist.has(tokenId);
+            if (isBlacklistedInSection) continue;
+
+            const sectionWhitelist = sectionData.whitelist;
+            const isWhitelistedInSection = sectionWhitelist.size === 0 || sectionWhitelist.has(tokenId);
+            if (isWhitelistedInSection) {
+                allowedAreas.push(connectedAreaId);
+                continue;
+            }
+
+            allowedAreas.push(connectedAreaId);
+        }
+
+        return allowedAreas;
+    }
+
     computePath(){
-        // Logic to compute the path for the token based on its area and allowed areas
+        const token = this.token;
+        const areaId = this.area;
+        if (!areaId) return;
+
+        const { destination, validCells } = getNextDestination(token);
+        if (!destination) return;
+
+        const start = canvas.grid.getOffset({ x: token.bounds.x, y: token.bounds.y });
+        const region = canvas.scene.regions.get(cache.areasData[areaId].regionId);
+        const path = getPathFromTo(token, region, validCells, start, destination);
+
+        // DEBUG
+        const graphic = cache.tokenPaths[token.id]?.graphic ?? new PIXI.Graphics();
+        if (!cache.tokenPaths[token.id]?.graphic) {
+            canvas.primary.addChild(graphic);
+        }
+        graphic.clear();
+
+        const width = token.w;
+        const height = token.h;
+
+        const newColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
+        graphic.lineStyle(2, newColor);
+        graphic.beginFill(newColor, 0.5);
+        for (const point of path) {
+            graphic.drawCircle(point.x + width / 2, point.y + height / 2, 10);
+        }
+        graphic.endFill();
+
+        cache.tokenPaths[token.id] = {
+            step: 0,
+            loiter: 0,
+            retreat: 0,
+            retreating: false,
+            graphic: graphic,
+            color: newColor,
+            path: path,
+        };
     }
 }
 
@@ -283,45 +465,18 @@ function stepToken(token) {
 
 window.patrolCache = cache;
 
-function initTokenAreas() {
-    cache.tokenAreas = {};
-    const tokens = canvas.tokens.placeables;
-    for (const token of tokens) {
-        // const isPatroller = token.actor?.getFlag(MODULE_ID, "isPatroller");
-        // if (!isPatroller) continue;
+// function getAreaForToken(token) {
+//     const allowedAreasIds = getAllowedAreas(null, token.id);
+//     if (!allowedAreasIds.length) return;
 
-        const areaId = getAreaForToken(token);
-        if (!areaId) continue;
+//     for (const areaId of allowedAreasIds) {
+//         const areaData = cache.areasData[areaId];
+//         const region = canvas.scene.regions.get(areaData.regionId);
+//         if (!region) continue;
 
-        cache.tokenAreas[token.id] = areaId;
-    }
-}
-
-function initTokenPaths() {
-    cache.tokenPaths = {};
-    for (const token of canvas.tokens.placeables) {
-        // const isPatroller = token.actor?.getFlag(MODULE_ID, "isPatroller");
-        // if (!isPatroller) continue;
-
-        const areaId = cache.tokenAreas[token.id];
-        if (!areaId) continue;
-
-        buildNextPath(token);
-    }
-}
-
-function getAreaForToken(token) {
-    const allowedAreasIds = getAllowedAreas(null, token.id);
-    if (!allowedAreasIds.length) return;
-
-    for (const areaId of allowedAreasIds) {
-        const areaData = cache.areasData[areaId];
-        const region = canvas.scene.regions.get(areaData.regionId);
-        if (!region) continue;
-
-        if (region.polygonTree.testPoint(token.center)) return areaId;
-    }
-}
+//         if (region.polygonTree.testPoint(token.center)) return areaId;
+//     }
+// }
 
 function getNextDestination(token) {
     const areaId = cache.tokenAreas[token.id];
@@ -499,80 +654,80 @@ function getPathFromTo(token, region, cells, start, end) {
     return path.reverse();
 }
 
-function getNextArea(token) {
-    const isPatroller = token.actor?.getFlag(MODULE_ID, "isPatroller");
-    if (!isPatroller) return;
+// function getNextArea(token) {
+//     const isPatroller = token.actor?.getFlag(MODULE_ID, "isPatroller");
+//     if (!isPatroller) return;
 
-    const currentTokenArea = cache.tokenAreas[token.id];
-    if (!currentTokenArea) return;
+//     const currentTokenArea = cache.tokenAreas[token.id];
+//     if (!currentTokenArea) return;
 
-    const allowedAreas = getAllowedAreas(currentTokenArea, token.id);
-    if (!allowedAreas.length) return currentTokenArea;
+//     const allowedAreas = getAllowedAreas(currentTokenArea, token.id);
+//     if (!allowedAreas.length) return currentTokenArea;
 
-    const selectedArea = getRandomArea(allowedAreas);
-    cache.tokenAreas[token.id] = selectedArea;
+//     const selectedArea = getRandomArea(allowedAreas);
+//     cache.tokenAreas[token.id] = selectedArea;
 
-    return selectedArea;
-}
+//     return selectedArea;
+// }
 
-function getAllowedAreas(areaId, tokenId) {
-    // const areaData = getSetting("areasData");
-    const connectedAreasIds = areaId ? cache.areasData[areaId]?.connectedAreas : Object.keys(cache.areasData);
-    if (!connectedAreasIds) return [];
+// function getAllowedAreas(areaId, tokenId) {
+//     // const areaData = getSetting("areasData");
+//     const connectedAreasIds = areaId ? cache.areasData[areaId]?.connectedAreas : Object.keys(cache.areasData);
+//     if (!connectedAreasIds) return [];
 
-    // const sectionsData = getSetting("sectionsData");
+//     // const sectionsData = getSetting("sectionsData");
 
-    const allowedAreas = [];
-    for (const connectedAreaId of connectedAreasIds) {
-        const connectedArea = cache.areasData[connectedAreaId];
+//     const allowedAreas = [];
+//     for (const connectedAreaId of connectedAreasIds) {
+//         const connectedArea = cache.areasData[connectedAreaId];
 
-        // If token is blacklisted, skip this area
-        const areaBlacklist = connectedArea.blacklist;
-        const isBlacklistedInArea = areaBlacklist.has(tokenId);
-        if (isBlacklistedInArea) continue;
+//         // If token is blacklisted, skip this area
+//         const areaBlacklist = connectedArea.blacklist;
+//         const isBlacklistedInArea = areaBlacklist.has(tokenId);
+//         if (isBlacklistedInArea) continue;
 
-        // If a whitelist exists, check if the token is whitelisted
-        const areaWhitelist = connectedArea.whitelist;
-        const isWhitelistedInArea = areaWhitelist.size === 0 || areaWhitelist.has(tokenId);
-        if (isWhitelistedInArea) {
-            allowedAreas.push(connectedAreaId);
-            continue;
-        }
+//         // If a whitelist exists, check if the token is whitelisted
+//         const areaWhitelist = connectedArea.whitelist;
+//         const isWhitelistedInArea = areaWhitelist.size === 0 || areaWhitelist.has(tokenId);
+//         if (isWhitelistedInArea) {
+//             allowedAreas.push(connectedAreaId);
+//             continue;
+//         }
 
-        // If a section exists, check if the token is blacklisted or whitelisted in the section
-        // If this area is not in a section, allow the token to enter it as it passed the previous checks
-        const sectionId = connectedArea.section;
-        const sectionData = cache.sectionsData[sectionId];
-        if (!sectionData) {
-            allowedAreas.push(connectedAreaId);
-            continue;
-        };
+//         // If a section exists, check if the token is blacklisted or whitelisted in the section
+//         // If this area is not in a section, allow the token to enter it as it passed the previous checks
+//         const sectionId = connectedArea.section;
+//         const sectionData = cache.sectionsData[sectionId];
+//         if (!sectionData) {
+//             allowedAreas.push(connectedAreaId);
+//             continue;
+//         };
 
-        const sectionBlacklist = sectionData.blacklist;
-        const isBlacklistedInSection = sectionBlacklist.has(tokenId);
-        if (isBlacklistedInSection) continue;
+//         const sectionBlacklist = sectionData.blacklist;
+//         const isBlacklistedInSection = sectionBlacklist.has(tokenId);
+//         if (isBlacklistedInSection) continue;
 
-        const sectionWhitelist = sectionData.whitelist;
-        const isWhitelistedInSection = sectionWhitelist.size === 0 || sectionWhitelist.has(tokenId);
-        if (isWhitelistedInSection) {
-            allowedAreas.push(connectedAreaId);
-            continue;
-        }
+//         const sectionWhitelist = sectionData.whitelist;
+//         const isWhitelistedInSection = sectionWhitelist.size === 0 || sectionWhitelist.has(tokenId);
+//         if (isWhitelistedInSection) {
+//             allowedAreas.push(connectedAreaId);
+//             continue;
+//         }
 
-        allowedAreas.push(connectedAreaId);
-    }
+//         allowedAreas.push(connectedAreaId);
+//     }
 
-    return allowedAreas;
-}
+//     return allowedAreas;
+// }
 
-function getRandomArea(allowedAreas) {
-    const total = Object.values(allowedAreas).reduce((sum, value) => sum + value.weight, 0);
-    let rand = Math.random() * total;
-    for (const [areaId, weight] of Object.entries(allowedAreas)) {
-        rand -= weight;
-        if (rand <= 0) return areaId;
-    }
-}
+// function getRandomArea(allowedAreas) {
+//     const total = Object.values(allowedAreas).reduce((sum, value) => sum + value.weight, 0);
+//     let rand = Math.random() * total;
+//     for (const [areaId, weight] of Object.entries(allowedAreas)) {
+//         rand -= weight;
+//         if (rand <= 0) return areaId;
+//     }
+// }
 
 function wallBetween(cellA, cellB, cache) {
     const keyA = `${cellA.i},${cellA.j}`;
