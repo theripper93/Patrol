@@ -27,7 +27,10 @@
     }
   ],
   "esmodules": [
-    "scripts/main.js"
+    "index.js"
+  ],
+  "styles": [
+    "styles/module.css"
   ],
   "socket": true,
   "url": "https://github.com/theripper93/Patrol",

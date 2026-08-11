@@ -4,7 +4,6 @@ import { patrolInstances } from "./main.js";
 export async function patrolSpotted({ uuid }) {
     game.togglePause(true);
     let enemyToken = fromUuidSync(uuid)?.object;
-    if (game.user.isGM && patrolInstances._patrol.DEBUG) console.log("Spotted by:", enemyToken);
     await canvas.animatePan({
         x: enemyToken.center.x,
         y: enemyToken.center.y,
@@ -45,7 +44,6 @@ export async function patrolSpotted({ uuid }) {
 
 export async function patrolAlerted({ uuid }) {
     let enemyToken = fromUuidSync(uuid)?.object;
-    if (game.user.isGM && patrolInstances._patrol.DEBUG) console.log("Allerted:", enemyToken);
     foundry.audio.AudioHelper.play(
         {
             src: game.settings.get(MODULE_ID, "patrolAlert"),

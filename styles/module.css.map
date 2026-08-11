@@ -1,0 +1,1 @@
+{"version":3,"file":"styles/module.css","mappings":";;;AACI;EACI;AAAR,C","sources":["webpack:///./style/module.scss"],"sourcesContent":["#patrol-app {\n    [data-application-part=\"content\"] {\n        display: flex;\n        \n    }\n}"],"names":[],"sourceRoot":""}

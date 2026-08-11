@@ -1,15 +1,46 @@
 import { MODULE_ID } from "../main.js";
 import { getSetting } from "../settings.js";
-import { HandlebarsApplication } from "../lib/utils.js";
+import { HandlebarsApplication, mergeObject } from "../lib/utils.js";
 
 const TOKENS_OPEN_DOORS = true;
 
 export class PatrolApp extends HandlebarsApplication {
-    
+
+    #stepping = false;
+    #allTokens = true;
+
+    static get DEFAULT_OPTIONS() {
+        return mergeObject(super.DEFAULT_OPTIONS, {
+            window: {
+                contentClasses: ["standard-form"],
+            },
+            actions: {
+                selectSingle: this.selectSingle,
+                selectAll: this.selectAll,
+                stepForward: this.stepForward,
+                toggleStepping: this.toggleStepping,
+                stepBackward: this.stepBackward,
+            },
+            position: {
+                width: "auto"
+            }
+        });
+
+    }
+
+    static get PARTS() {
+        return {
+            content: {
+                template: `modules/${MODULE_ID}/templates/${this.APP_ID}.hbs`,
+                classes: ["flexrow"],
+		    },
+        }
+    }
+
     async _prepareContext(options) {
         const context = await super._prepareContext(options);
 
-        
+
         return context;
     }
 
@@ -17,112 +48,162 @@ export class PatrolApp extends HandlebarsApplication {
         await super._onRender(context, options);
         const html = this.element;
 
+        const button = this.element.querySelector('[data-action="toggleStepping"]');
+        if (Patrol.stepping) {
+            button.classList.remove("fa-play");
+            button.classList.add("fa-pause");
+        } else {
+            button.classList.remove("fa-pause");
+            button.classList.add("fa-play");
+        }
 
+        this.element.querySelector('[data-action="selectSingle"]').setAttribute("aria-pressed", this.#allTokens ? "false" : "true");
+        this.element.querySelector('[data-action="selectAll"]').setAttribute("aria-pressed", this.#allTokens ? "true" : "false");
+    }
+
+    static async selectSingle() {
+        this.#allTokens = false;
+        this.render();
+    }
+
+    static async selectAll() {
+        this.#allTokens = true;
+        this.render();
+    }
+
+    static async stepForward() {
+        if (this.#allTokens) {
+            Patrol.stepAllTokens();
+        } else {
+            Patrol.stepToken(_token);
+        }
+    }
+
+    static async stepBackward() {
+
+    }
+
+    static async toggleStepping() {
+        Patrol.toggleStepping(!Patrol.stepping);
+        this.render();
     }
 }
 
-Hooks.on("ready", buildPatrolCache);
-
-function buildPatrolCache() {
-    
+export function init() {
+    Patrol.init();
+    window.patrolCache = Patrol;
+    window.patrolApp = new PatrolApp();
 }
 
 class Patrol {
-    constructor() {
-        this.#patrolTokens = new Map();
+    static areas = {};
+    static sections = {};
+    static #tokens = new Map();
+    static #stepping = false;
+    static tokensStepTask = null;
+
+    static get stepping() {
+        return this.#stepping;
     }
 
-    clearTokens() {
-        this.#patrolTokens.clear();
+    static set stepping(value) {
+        this.#stepping = value;
     }
 
-    init() {
-        cache.sectionsData = getSetting("sectionsData");
-        cache.areasData = getSetting("areasData");
+    static init() {
+        this.areas = getSetting("areas");
+        this.sections = getSetting("sections");
 
-        for (const areaId of Object.keys(cache.areasData)) {
-            cache.areasData[areaId].blacklist = new Set(cache.areasData[areaId].blacklist);
-            cache.areasData[areaId].whitelist = new Set(cache.areasData[areaId].whitelist);
-            // exploreRegion(areaId);
+        for (const areaId of Object.keys(this.areas)) {
+            this.areas[areaId].blacklist = new Set(this.areas[areaId].blacklist);
+            this.areas[areaId].whitelist = new Set(this.areas[areaId].whitelist);
         }
 
-        for (const sectionId of Object.keys(cache.sectionsData)) {
-            cache.sectionsData[sectionId].blacklist = new Set(cache.sectionsData[sectionId].blacklist);
-            cache.sectionsData[sectionId].whitelist = new Set(cache.sectionsData[sectionId].whitelist);
+        for (const sectionId of Object.keys(this.sections)) {
+            this.sections[sectionId].blacklist = new Set(this.sections[sectionId].blacklist);
+            this.sections[sectionId].whitelist = new Set(this.sections[sectionId].whitelist);
         }
 
-        // this.initTokenAreas();
-        this.initTokenPaths();
+        this.initTokens();
     }
 
-    initTokens() {
-        this.clearTokens();
+    static initTokens() {
+        this.#tokens.clear();
         for (const token of canvas.tokens.placeables) {
-            // const isPatroller = token.actor?.getFlag(MODULE_ID, "isPatroller");
-            // if (!isPatroller) continue;
-
-            const newPatrolToken = new PatrolToken(token);
-            newPatrolToken.initArea();
-            this.#patrolTokens.set(token.document, newPatrolToken);
-
+            const pt = new PatrolToken(token);
+            pt.initArea();
+            if (pt.area) {
+                pt.computePath();
+                this.#tokens.set(token.id, pt);
+            }
         }
     }
 
-    initTokenAreas() {
-        cache.tokenAreas = {};
-        const tokens = canvas.tokens.placeables;
-        for (const token of tokens) {
-            // const isPatroller = token.actor?.getFlag(MODULE_ID, "isPatroller");
-            // if (!isPatroller) continue;
+    static getToken(tokenId) {
+        return this.#tokens.get(tokenId);
+    }
 
-            const areaId = getAreaForToken(token);
-            if (!areaId) continue;
+    static clearTokens() {
+        this.#tokens.clear();
+    }
 
-            cache.tokenAreas[token.id] = areaId;
+    static toggleStepping(toggle) {
+        this.#stepping = toggle;
+        if (toggle) {
+            if (!Patrol.tokensStepTask) {
+                Patrol.tokensStepTask = true;
+                Patrol.stepAllTokens();
+            }
+        } else {
+            if (Patrol.tokensStepTask) {
+                Patrol.tokensStepTask = false;
+            }
         }
     }
 
-    initTokenPaths() {
-        cache.tokenPaths = {};
+    static async stepToken(token) {
+        const pt = Patrol.getToken(token.id);
+        if (!pt) return;
+        await pt.step();
+    }
+
+    static async stepAllTokens() {
         for (const token of canvas.tokens.placeables) {
-            // const isPatroller = token.actor?.getFlag(MODULE_ID, "isPatroller");
-            // if (!isPatroller) continue;
-
-            const areaId = cache.tokenAreas[token.id];
-            if (!areaId) continue;
-
-            buildNextPath(token);
+            await Patrol.stepToken(token);
         }
+        if (Patrol.tokensStepTask) Patrol.stepAllTokens();
     }
 }
 
-class PatrolToken {
-    constructor(token, options = {}) {
-        this.#token = token;
-        this.#area = this.getCurrentArea();
-        this.#pathGraphic = new PIXI.Graphics();
-    }
+const MAX_LOITER = 5;
+const MAX_RETREAT = 5;
 
-    #token = null;
-    #loiterCount = 0;
-    #state = PatrolToken.STATES.STOPPED;
+class PatrolToken {
+    #token;
+    #area;
+    #step = 0;
+    #loiter = 0;
+    #retreat = 0;
+    #retreating = false;
+    #graphic;
+    #graphicAdded = false;
+    #color;
     #path = [];
-    #area = null;
+    #lastDoor;
+    #state = PatrolToken.STATES.PATROLLING;
 
     static STATES = {
         STOPPED: 0,
         LOITERING: 1,
         PATROLLING: 2,
+        SUSPICIOUS: 3,
         ALERTED: 3,
-        MOVING_TO_NEW_AREA: 4,
+        MOVING_TO_NEW_AREA: 5,
     }
-
-    get token() {
-        return this.#token;
-    }
-
-    get area() {
-        return this.#area;
+    
+    constructor(token) {
+        this.#token = token;
+        this.#graphic = new PIXI.Graphics();
     }
 
     get state() {
@@ -137,43 +218,33 @@ class PatrolToken {
         this.onStateChange(newState);
     }
 
+    get token() {
+        return this.#token;
+    }
+
+    get area() {
+        return this.#area;
+    }
+
+    set area(areaId) {
+        this.#area = areaId;
+    }
+
     get currentStepIndex() {
-        return 1
+        return this.#step;
     }
 
-    get currentStep() {
-        return this.#path[this.currentStepIndex];
+    get path() {
+        return this.#path;
     }
 
-    get nextStep() {
-        return this.#path[this.currentStepIndex + 1];
-    }
+    // --- area selection ---
 
-    get previousStep() {
-        return this.#path[this.currentStepIndex - 1];
-    }
-
-    onStateChange(newState) {
-        // Handle state change logic here
-        switch (newState) {
-            case PatrolToken.STATES.STOPPED:
-                // Logic for when the token stops
-                break;
-            case PatrolToken.STATES.LOITERING:
-                // Logic for when the token is loitering
-                break;
-            case PatrolToken.STATES.PATROLLING:
-                // Logic for when the token is patrolling
-                break;
-            case PatrolToken.STATES.ALERTED:
-                // Logic for when the token is alerted
-                break;
-        }
-    }
-
-    async step() {
-        if(this.#state === PatrolToken.STATES.STOPPED) return console.log("Token is stopped, cannot step.", this);
-        // Logic to move the token along its path based on its current state
+    initArea() {
+        const areaId = this.getCurrentArea();
+        if (!areaId) return;
+        this.area = areaId;
+        return areaId;
     }
 
     getCurrentArea() {
@@ -181,7 +252,7 @@ class PatrolToken {
         if (!allowedAreasIds.length) return;
 
         for (const areaId of allowedAreasIds) {
-            const areaData = cache.areasData[areaId];
+            const areaData = Patrol.areas[areaId];
             const region = canvas.scene.regions.get(areaData.regionId);
             if (!region) continue;
 
@@ -193,14 +264,14 @@ class PatrolToken {
         const isPatroller = this.token.actor?.getFlag(MODULE_ID, "isPatroller");
         if (!isPatroller) return;
 
-        const currentTokenArea = cache.tokenAreas[this.token.id];
+        const currentTokenArea = this.area;
         if (!currentTokenArea) return;
 
         const allowedAreas = this.getAllowedAreas(currentTokenArea, this.token.id);
         if (!allowedAreas.length) return currentTokenArea;
 
         const selectedArea = this.getRandomArea(allowedAreas);
-        cache.tokenAreas[this.token.id] = selectedArea;
+        this.area = selectedArea;
 
         return selectedArea;
     }
@@ -215,15 +286,12 @@ class PatrolToken {
     }
 
     getAllowedAreas(areaId, tokenId) {
-        // const areaData = getSetting("areasData");
-        const connectedAreasIds = areaId ? cache.areasData[areaId]?.connectedAreas : Object.keys(cache.areasData);
+        const connectedAreasIds = areaId ? Patrol.areas[areaId]?.connectedAreas : Object.keys(Patrol.areas);
         if (!connectedAreasIds) return [];
-
-        // const sectionsData = getSetting("sectionsData");
 
         const allowedAreas = [];
         for (const connectedAreaId of connectedAreasIds) {
-            const connectedArea = cache.areasData[connectedAreaId];
+            const connectedArea = Patrol.areas[connectedAreaId];
 
             // If token is blacklisted, skip this area
             const areaBlacklist = connectedArea.blacklist;
@@ -241,7 +309,7 @@ class PatrolToken {
             // If a section exists, check if the token is blacklisted or whitelisted in the section
             // If this area is not in a section, allow the token to enter it as it passed the previous checks
             const sectionId = connectedArea.section;
-            const sectionData = cache.sectionsData[sectionId];
+            const sectionData = Patrol.sections[sectionId];
             if (!sectionData) {
                 allowedAreas.push(connectedAreaId);
                 continue;
@@ -264,333 +332,271 @@ class PatrolToken {
         return allowedAreas;
     }
 
-    computePath(){
-        const token = this.token;
+    // --- stepping ---
+
+    async step() {
+
+        this.spotEnemy();
+
+        if (this.#step >= this.#path.length) {
+            this.computePath();
+            this.step();
+            return;
+        }
+
+        let next = this.#path[this.#step];
+
+        const checkOccupied = true;
+        if (checkOccupied) {
+            const size = canvas.dimensions.size;
+            let occupied = canvas.tokens.placeables.find(t => {
+                if (t.id === this.token.id) return false;
+                for (let i = 0; i < this.token.document.height; i++) {
+                    for (let j = 0; j < this.token.document.width; j++) {
+                        const subcell = {
+                            x: next.x + j * size + size / 2,
+                            y: next.y + i * size + size / 2,
+                        }
+                        if (t.bounds.contains(subcell.x, subcell.y)) return true;
+                    }
+                }
+            });
+
+            if (occupied) {
+                const occupiedPT = Patrol.getToken(occupied.id);
+                const nextOccupiedCell = occupiedPT?.path[occupiedPT?.currentStepIndex];
+                if (nextOccupiedCell && this.token.bounds.contains(nextOccupiedCell.x, nextOccupiedCell.y)) occupied = null;
+            }
+
+            const CHANCE_TO_LOITER = 0.8;
+
+            if (occupied) {
+                if (Math.random() < CHANCE_TO_LOITER) {
+                    if (this.#loiter > MAX_LOITER) {
+                        this.computePath();
+                        return;
+                    }
+                    this.#loiter++;
+                    return;
+                }
+
+                this.#retreating = !this.#retreating;
+                if (this.#retreat > MAX_RETREAT) {
+                    this.computePath();
+                    return;
+                }
+                this.#retreat++;
+                if (this.#retreating && this.#step > 0) this.#step--;
+                this.step();
+                return;
+            }
+        }
+
+        if (this.#retreating) {
+            if (this.#step === 0) {
+                this.computePath();
+                return;
+            }
+            this.#step--;
+        } else {
+            this.#step++;
+        }
+
+        if (this.#lastDoor && this.#lastDoor.isOpen && TOKENS_OPEN_DOORS) {
+            const chanceToCloseDoor = Math.random() < 0.5;
+            if (chanceToCloseDoor) this.#lastDoor.update({ ds: CONST.WALL_DOOR_STATES.CLOSED });
+            this.#lastDoor = null;
+        }
+
+        if (next.door) {
+            if (TOKENS_OPEN_DOORS) {
+                if (!next.door.isOpen) next.door.update({ ds: CONST.WALL_DOOR_STATES.OPEN });
+                this.#lastDoor = next.door;
+            }
+        }
+
+        return this.token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true } });
+    }
+
+    // --- pathfinding ---
+
+    spotEnemy() {
+        if (this.state !== PatrolToken.STATES.PATROLLING) return false;
+
+        for (const enemy of canvas.tokens.placeables) {
+            if (enemy.id === this.token.id) continue;
+            if (!enemy.actor.hasPlayerOwner) continue;
+            const enemyCenter = enemy.center;
+            if (!this.token.vision?.testPoint(enemyCenter)) continue;
+
+            const enemyOffset = canvas.grid.getOffset(enemyCenter);
+            this.computePath(enemyOffset);
+            if (this.path.length === 0) this.computePath();
+            return true;
+        }
+
+        return false;
+    }
+
+    computePath(specificDestination = null) {
         const areaId = this.area;
         if (!areaId) return;
 
-        const { destination, validCells } = getNextDestination(token);
-        if (!destination) return;
+        const { destination, validCells } = specificDestination ? {
+            destination: specificDestination,
+            validCells: []
+        } : this.#getNextDestination();
 
-        const start = canvas.grid.getOffset({ x: token.bounds.x, y: token.bounds.y });
-        const region = canvas.scene.regions.get(cache.areasData[areaId].regionId);
-        const path = getPathFromTo(token, region, validCells, start, destination);
+        const start = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
+        const region = canvas.scene.regions.get(Patrol.areas[areaId].regionId);
+        const path = this.#getPathFromTo(region, validCells, start, destination, !!specificDestination);
 
-        // DEBUG
-        const graphic = cache.tokenPaths[token.id]?.graphic ?? new PIXI.Graphics();
-        if (!cache.tokenPaths[token.id]?.graphic) {
-            canvas.primary.addChild(graphic);
+        if (!this.#graphicAdded) {
+            canvas.primary.addChild(this.#graphic);
+            this.#graphicAdded = true;
         }
-        graphic.clear();
+        this.#graphic.clear();
 
-        const width = token.w;
-        const height = token.h;
+        const width = this.token.w;
+        const height = this.token.h;
 
         const newColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
-        graphic.lineStyle(2, newColor);
-        graphic.beginFill(newColor, 0.5);
+        this.#graphic.lineStyle(2, newColor);
+        this.#graphic.beginFill(newColor, 0.5);
         for (const point of path) {
-            graphic.drawCircle(point.x + width / 2, point.y + height / 2, 10);
+            this.#graphic.drawCircle(point.x + width / 2, point.y + height / 2, 10);
         }
-        graphic.endFill();
+        this.#graphic.endFill();
 
-        cache.tokenPaths[token.id] = {
-            step: 0,
-            loiter: 0,
-            retreat: 0,
-            retreating: false,
-            graphic: graphic,
-            color: newColor,
-            path: path,
-        };
+        this.#step = 0;
+        this.#loiter = 0;
+        this.#retreat = 0;
+        this.#retreating = false;
+        this.#color = newColor;
+        this.#path = path;
     }
-}
 
-const cache = {
-    areasData: {
-        "areaUuid0": {
-            regionId: "regionUuid0",
-            connectedAreas: ["areaUuid1", "areaUuid2"],
-            blacklist: new Set(), // Set of user IDs, supercedes whitelist
-            whitelist: new Set(), // Set of user IDs, ignored if empty
-            section: "sectionUuid3",
-            weight: 1,
-            cells: [],
-        },
-        "areaUuid1": {
-            // ...
-        }
-    },
-    sectionsData: {
-        "sectionUuid3": {
-            blacklist: new Set(), // Set of user IDs, supercedes whitelist
-            whitelist: new Set(), // Set of user IDs, ignored if empty
-        },
-        // ...
-    },
-    tokenAreas: {
-        "tokenUuid0": "areaUuid0",
-        "tokenUuid1": "areaUuid1",
-        // ...
-    },
-    tokenPaths: {
-        "tokenUuid0": {
-            step: 0,
-            loiter: 0,
-            retreat: 0,
-            retreating: false,
-            graphic: null,
-            path: [
-                {x: 100, y: 200},
-                {x: 100, y: 200},
-                {x: 300, y: 200},
-                {x: 300, y: 200},
-            ]
-        },
-    },
-}
+    #getNextDestination() {
+        const areaId = this.area;
+        if (!areaId) return;
 
-let tokensStepTask = null;
+        const areaData = Patrol.areas[areaId];
+        if (!areaData) return;
 
-window.toggleStepping = toggleStepping;
-function toggleStepping(toggle) {
-    if (toggle) {
-        if (!tokensStepTask) {
-            tokensStepTask = true;
-            stepAllTokens();
-        }
-    } else {
-        if (tokensStepTask) {
-            tokensStepTask = false;
-        }
-    }
-}
+        const region = canvas.scene.regions.get(areaData.regionId);
+        if (!region) return;
 
-window.stepAllTokens = stepAllTokens;
-async function stepAllTokens() {
-    for (const token of canvas.tokens.placeables) {
-        await stepToken(token);
-        // if (token.movementAnimationPromise) await token.movementAnimationPromise;
-    }
-    if (tokensStepTask) stepAllTokens();
-}
+        const startOffset = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
+        const visited = new Set();
+        const frontier = [startOffset];
+        const wallCache = new Map();
+        const cells = [];
 
-const MAX_LOITER = 5;
-const MAX_RETREAT = 5;
+        const startKey = `${startOffset.i},${startOffset.j}`;
+        visited.add(startKey);
 
-function stepToken(token) {
-    const path = cache.tokenPaths[token.id];
-    if (!path) return;
-    const step = path.step;
+        while (frontier.length > 0) {
+            const cell = frontier.shift();
+            cells.push({i: cell.i, j: cell.j});
 
-    if (step >= path.path.length) {
-        buildNextPath(token);
-        stepToken(token);
-        return;
-    };
+            for (const neighbor of getAdjacentOffsets(cell, { diagonals: false })) {
+                const key = `${neighbor.i},${neighbor.j}`;
+                if (visited.has(key)) continue;
 
-    let next = path.path[step];
-    
-    const checkOccupied = true;
-    if (checkOccupied) {
-        const size = canvas.dimensions.size;
-        let occupied = canvas.tokens.placeables.find(t => {
-            if (t.id === token.id) return false;
-            for (let i = 0; i < token.document.height; i++) {
-                for (let j = 0; j < token.document.width; j++) {
-                    const subcell = {
-                        x: next.x + j * size + size / 2,
-                        y: next.y + i * size + size / 2,
-                    }
-                    if (t.bounds.contains(subcell.x, subcell.y)) return true;
-                }
+                // Must be inside the region polygon
+                const center = canvas.grid.getCenterPoint(neighbor);
+                if (!region.polygonTree.testPoint(center)) continue;
+
+                // Must not be blocked by a wall
+                if (wallBetween(cell, neighbor, wallCache).blocked) continue;
+
+                // Must have enough space for the token to fit
+                if (!this.#tokenFits(neighbor, region, wallCache)) continue;
+
+                visited.add(key);
+                frontier.push(neighbor);
             }
-        });
-
-        if (occupied) {
-            const nextOccupiedPath = cache.tokenPaths[occupied.id];
-            const nextOccupiedCell = nextOccupiedPath?.path[nextOccupiedPath?.step]
-            if (nextOccupiedCell && token.bounds.contains(nextOccupiedCell.x, nextOccupiedCell.y)) occupied = null;
         }
-    
-        const CHANCE_TO_LOITER = 0.8;
-    
-        if (occupied) {
-            if (Math.random() < CHANCE_TO_LOITER) {
-                if (path.loiter > MAX_LOITER) {
-                    buildNextPath(token);
-                    return;
-                }
-                path.loiter++;
-                return;
+
+        return {
+            destination: cells[Math.floor(Math.random() * cells.length)],
+            validCells: cells
+        }
+    }
+
+    #tokenFits(cell, region, wallCache, ignoreBoundaries = false) {
+        const height = this.token.document.height;
+        const width = this.token.document.width;
+
+        if (height === 1 && width === 1) return true;
+
+        for (let i = 0; i < height; i++) {
+            for (let j = 0; j < width; j++) {
+                const subcell = { i: cell.i + i, j: cell.j + j };
+                if (!ignoreBoundaries && !region.polygonTree.testPoint(canvas.grid.getCenterPoint(subcell))) return false;
+                if (j < width - 1 && wallBetween(subcell, { i: subcell.i, j: subcell.j + 1 }, wallCache).blocked) return false;
+                if (i < height - 1 && wallBetween(subcell, { i: subcell.i + 1, j: subcell.j }, wallCache).blocked) return false;
             }
-    
-            path.retreating = !path.retreating;
-            if (path.retreat > MAX_RETREAT) {
-                buildNextPath(token);
-                return;
+        }
+
+        return true;
+    }
+
+    #getPathFromTo(region, cells, start, end, ignoreBoundaries = false) {
+        const cellSet = new Set(cells.map(c => `${c.i},${c.j}`));
+        const sk = `${start.i},${start.j}`;
+        const ek = `${end.i},${end.j}`;
+        if (!ignoreBoundaries && (!cellSet.has(sk) || !cellSet.has(ek))) return [];
+
+        // BFS
+        const parent = new Map();
+        const visited = new Set();
+        const frontier = [start];
+        const wallCache = new Map();
+        visited.add(sk);
+
+        while (frontier.length > 0) {
+            const current = frontier.shift();
+            const ck = `${current.i},${current.j}`;
+            if (ck === ek) break;
+
+            for (const nb of getAdjacentOffsets(current, { diagonals: false })) {
+                const nk = `${nb.i},${nb.j}`;
+
+                if (visited.has(nk)) continue;
+                if (!ignoreBoundaries && !cellSet.has(nk)) continue;
+                const wall = wallBetween(current, nb, wallCache);
+                if (wall.blocked) continue;
+                if (!this.#tokenFits(nb, region, wallCache, ignoreBoundaries)) continue;
+
+                visited.add(nk);
+                parent.set(nk, {i: current.i, j: current.j, door: wall.door });
+                frontier.push(nb);
             }
-            path.retreat++;
-            if (path.retreating && path.step > 0) path.step--;
-            stepToken(token);
-            return;
         }
-    }
 
-    if (path.retreating) {
-        if (path.step === 0) {
-            buildNextPath(token);
-            return;
+        if (!parent.has(ek) && sk !== ek) return [];
+
+        const path = [];
+        let cur = end;
+        let iterations = 0;
+        while (true) {
+            const cell = canvas.grid.getTopLeftPoint(cur);
+            path.push({...cell, door: cur.door });
+            const ck = `${cur.i},${cur.j}`;
+            if (ck === sk) break;
+            cur = parent.get(ck);
+            iterations++;
+            if (iterations > 100000) break;
         }
-        path.step--;
-    } else {
-        path.step++;
-    }
 
-    if (path.lastDoor && path.lastDoor.isOpen && TOKENS_OPEN_DOORS) {
-        const chanceToCloseDoor = Math.random() < 0.5;
-        if (chanceToCloseDoor) path.lastDoor.update({ ds: CONST.WALL_DOOR_STATES.CLOSED });
-        path.lastDoor = null;
-    }
-
-    if (next.door) {
-        if (TOKENS_OPEN_DOORS) {
-            if (!next.door.isOpen) next.door.update({ ds: CONST.WALL_DOOR_STATES.OPEN });
-            path.lastDoor = next.door;
-        }
-    }
-
-    return token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true } });
-}
-
-window.patrolCache = cache;
-
-// function getAreaForToken(token) {
-//     const allowedAreasIds = getAllowedAreas(null, token.id);
-//     if (!allowedAreasIds.length) return;
-
-//     for (const areaId of allowedAreasIds) {
-//         const areaData = cache.areasData[areaId];
-//         const region = canvas.scene.regions.get(areaData.regionId);
-//         if (!region) continue;
-
-//         if (region.polygonTree.testPoint(token.center)) return areaId;
-//     }
-// }
-
-function getNextDestination(token) {
-    const areaId = cache.tokenAreas[token.id];
-    if (!areaId) return;
-
-    const areaData = cache.areasData[areaId];
-    if (!areaData) return;
-
-    const region = canvas.scene.regions.get(areaData.regionId);
-    if (!region) return;
-
-    const startOffset = canvas.grid.getOffset({ x: token.bounds.x, y: token.bounds.y });
-    const visited = new Set();
-    const frontier = [startOffset];
-    const wallCache = new Map();
-    const cells = [];
-    
-    const startKey = `${startOffset.i},${startOffset.j}`;
-    visited.add(startKey);
-
-    // const cellSet = new Set(areaData.cells.map(c => `${c.i},${c.j}`));
-
-    while (frontier.length > 0) {
-        const cell = frontier.shift();
-        cells.push({i: cell.i, j: cell.j});
-
-        for (const neighbor of getAdjacentOffsets(cell, { diagonals: false })) {
-            const key = `${neighbor.i},${neighbor.j}`;
-            if (visited.has(key)) continue;
-
-            // // Must be inside the region polygon
-            const center = canvas.grid.getCenterPoint(neighbor);
-            if (!region.polygonTree.testPoint(center)) continue;
-
-            // Must not be blocked by a wall
-            if (wallBetween(cell, neighbor, wallCache).blocked) continue;
-
-            // Must have enough space for the token to fit
-            if (!tokenFits(token, neighbor, region, wallCache)) continue;
-
-            visited.add(key);
-            frontier.push(neighbor);
-        }
-    }
-
-    return {
-        destination: cells[Math.floor(Math.random() * cells.length)],
-        validCells: cells
+        path.pop(); // Remove the starting point, as the token is already there
+        return path.reverse();
     }
 }
 
-function tokenFits(token, cell, region, wallCache) {
-    const height = token.document.height;
-    const width = token.document.width;
-
-    if (height === 1 && width === 1) return true;
-
-    for (let i = 0; i < height; i++) {
-        for (let j = 0; j < width; j++) {
-            const subcell = { i: cell.i + i, j: cell.j + j };
-            if (!region.polygonTree.testPoint(canvas.grid.getCenterPoint(subcell))) return false;
-            if (j < width - 1 && wallBetween(subcell, { i: subcell.i, j: subcell.j + 1 }, wallCache).blocked) return false;
-            if (i < height - 1 && wallBetween(subcell, { i: subcell.i + 1, j: subcell.j }, wallCache).blocked) return false;
-        }
-    }
-
-    return true;
-}
-
-let graphic = null;
-function buildNextPath(token) {
-    const areaId = cache.tokenAreas[token.id];
-    if (!areaId) return;
-
-    // const cells = cache.areasData[areaId].cells;
-    // if (!cells || !cells.length) return;
-
-    const { destination, validCells } = getNextDestination(token);
-    if (!destination) return;
-
-    const start = canvas.grid.getOffset({ x: token.bounds.x, y: token.bounds.y });
-    const region = canvas.scene.regions.get(cache.areasData[areaId].regionId);
-    const path = getPathFromTo(token, region, validCells, start, destination);
-
-    // DEBUG
-    const graphic = cache.tokenPaths[token.id]?.graphic ?? new PIXI.Graphics();
-    if (!cache.tokenPaths[token.id]?.graphic) {
-        canvas.primary.addChild(graphic);
-    }
-    graphic.clear();
-
-    const width = token.w;
-    const height = token.h;
-
-    const newColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
-    graphic.lineStyle(2, newColor);
-    graphic.beginFill(newColor, 0.5);
-    for (const point of path) {
-        graphic.drawCircle(point.x + width / 2, point.y + height / 2, 10);
-    }
-    graphic.endFill();
-
-    cache.tokenPaths[token.id] = {
-        step: 0,
-        loiter: 0,
-        retreat: 0,
-        retreating: false,
-        graphic: graphic,
-        color: newColor,
-        path: path,
-    };
-}
-
-window.buildNextPath = buildNextPath;
+window.patrolCache = Patrol;
+window.buildNextPath = (token) => Patrol.getToken(token.id)?.computePath();
 
 function getAdjacentOffsets(cell, options = { diagonals: true }) {
     const allAdjacentOffsets = canvas.grid.getAdjacentOffsets(cell);
@@ -599,135 +605,6 @@ function getAdjacentOffsets(cell, options = { diagonals: true }) {
     }
     return allAdjacentOffsets;
 }
-
-function getPathFromTo(token, region, cells, start, end) {
-    const cellSet = new Set(cells.map(c => `${c.i},${c.j}`));
-    const sk = `${start.i},${start.j}`;
-    const ek = `${end.i},${end.j}`;
-    if (!cellSet.has(sk) || !cellSet.has(ek)) return [];
-
-    // BFS
-    const parent = new Map();
-    const visited = new Set();
-    const frontier = [start];
-    const wallCache = new Map();
-    visited.add(sk);
-
-    // CHECK WALLS HERE TOO
-    while (frontier.length > 0) {
-        const current = frontier.shift();
-        const ck = `${current.i},${current.j}`;
-        if (ck === ek) break;
-
-        for (const nb of getAdjacentOffsets(current, { diagonals: false })) {
-            const nk = `${nb.i},${nb.j}`;
-
-            if (visited.has(nk)) continue;
-            if (!cellSet.has(nk)) continue;
-            const wall = wallBetween(current, nb, wallCache);
-            if (wall.blocked) continue;
-            // if (wallBetween(current, nb, wallCache)) continue;
-            if (!tokenFits(token, nb, region, wallCache)) continue;
-
-            visited.add(nk);
-            parent.set(nk, {i: current.i, j: current.j, door: wall.door });
-            frontier.push(nb);
-        }
-    }
-
-    if (!parent.has(ek) && sk !== ek) return [];
-
-    const path = [];
-    let cur = end;
-    let iterations = 0;
-    while (true) {
-        const cell = canvas.grid.getTopLeftPoint(cur);
-        path.push({...cell, door: cur.door });
-        const ck = `${cur.i},${cur.j}`;
-        if (ck === sk) break;
-        cur = parent.get(ck);
-        iterations++;
-        if (iterations > 100000) break;
-    }
-
-    path.pop(); // Remove the starting point, as the token is already there
-    return path.reverse();
-}
-
-// function getNextArea(token) {
-//     const isPatroller = token.actor?.getFlag(MODULE_ID, "isPatroller");
-//     if (!isPatroller) return;
-
-//     const currentTokenArea = cache.tokenAreas[token.id];
-//     if (!currentTokenArea) return;
-
-//     const allowedAreas = getAllowedAreas(currentTokenArea, token.id);
-//     if (!allowedAreas.length) return currentTokenArea;
-
-//     const selectedArea = getRandomArea(allowedAreas);
-//     cache.tokenAreas[token.id] = selectedArea;
-
-//     return selectedArea;
-// }
-
-// function getAllowedAreas(areaId, tokenId) {
-//     // const areaData = getSetting("areasData");
-//     const connectedAreasIds = areaId ? cache.areasData[areaId]?.connectedAreas : Object.keys(cache.areasData);
-//     if (!connectedAreasIds) return [];
-
-//     // const sectionsData = getSetting("sectionsData");
-
-//     const allowedAreas = [];
-//     for (const connectedAreaId of connectedAreasIds) {
-//         const connectedArea = cache.areasData[connectedAreaId];
-
-//         // If token is blacklisted, skip this area
-//         const areaBlacklist = connectedArea.blacklist;
-//         const isBlacklistedInArea = areaBlacklist.has(tokenId);
-//         if (isBlacklistedInArea) continue;
-
-//         // If a whitelist exists, check if the token is whitelisted
-//         const areaWhitelist = connectedArea.whitelist;
-//         const isWhitelistedInArea = areaWhitelist.size === 0 || areaWhitelist.has(tokenId);
-//         if (isWhitelistedInArea) {
-//             allowedAreas.push(connectedAreaId);
-//             continue;
-//         }
-
-//         // If a section exists, check if the token is blacklisted or whitelisted in the section
-//         // If this area is not in a section, allow the token to enter it as it passed the previous checks
-//         const sectionId = connectedArea.section;
-//         const sectionData = cache.sectionsData[sectionId];
-//         if (!sectionData) {
-//             allowedAreas.push(connectedAreaId);
-//             continue;
-//         };
-
-//         const sectionBlacklist = sectionData.blacklist;
-//         const isBlacklistedInSection = sectionBlacklist.has(tokenId);
-//         if (isBlacklistedInSection) continue;
-
-//         const sectionWhitelist = sectionData.whitelist;
-//         const isWhitelistedInSection = sectionWhitelist.size === 0 || sectionWhitelist.has(tokenId);
-//         if (isWhitelistedInSection) {
-//             allowedAreas.push(connectedAreaId);
-//             continue;
-//         }
-
-//         allowedAreas.push(connectedAreaId);
-//     }
-
-//     return allowedAreas;
-// }
-
-// function getRandomArea(allowedAreas) {
-//     const total = Object.values(allowedAreas).reduce((sum, value) => sum + value.weight, 0);
-//     let rand = Math.random() * total;
-//     for (const [areaId, weight] of Object.entries(allowedAreas)) {
-//         rand -= weight;
-//         if (rand <= 0) return areaId;
-//     }
-// }
 
 function wallBetween(cellA, cellB, cache) {
     const keyA = `${cellA.i},${cellA.j}`;
@@ -751,9 +628,6 @@ function wallBetween(cellA, cellB, cache) {
             if (!wall) { result.blocked = true; continue; }
             if (wall.isDoor) {
                 result.door = wall;
-                // result.isDoor = true;
-                // result.isOpen = wall.isOpen;
-                // result.isLocked = wall.ds === CONST.WALL_DOOR_STATES.LOCKED;
                 if (!wall.isOpen && !TOKENS_OPEN_DOORS) result.blocked = true; // closed/locked doors block
             } else {
                 result.blocked = true;

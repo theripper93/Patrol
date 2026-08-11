@@ -5,7 +5,7 @@ const DEFAULT_CACHE = false;
 
 export function registerSettings() {
     const settings = {
-        areasData: {
+        areas: {
             type: Object,
             default: {
                 "areaUuid0": {
@@ -21,7 +21,7 @@ export function registerSettings() {
             scope: "world",
             config: false
         },
-        sectionsData: {
+        sections: {
             type: Object,
             default: {},
             scope: "world",
