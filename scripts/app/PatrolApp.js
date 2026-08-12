@@ -176,6 +176,8 @@ class Patrol {
 }
 
 const MAX_LOITER = 5;
+const MAX_SUSPICIOUS = 5;
+const MAX_ALERTED = 5;
 const MAX_RETREAT = 5;
 
 class PatrolToken {
@@ -184,6 +186,8 @@ class PatrolToken {
     #step = 0;
     #loiter = 0;
     #retreat = 0;
+    #suspicious = 0;
+    #alerted = 0;
     #retreating = false;
     #graphic;
     #graphicAdded = false;
@@ -197,7 +201,7 @@ class PatrolToken {
         LOITERING: 1,
         PATROLLING: 2,
         SUSPICIOUS: 3,
-        ALERTED: 3,
+        ALERTED: 4,
         MOVING_TO_NEW_AREA: 5,
     }
     
@@ -211,11 +215,23 @@ class PatrolToken {
     }
 
     set state(newState) {
+        const previousState = this.state;
         if (!Object.values(PatrolToken.STATES).includes(newState)) {
             throw new Error(`Invalid state: ${newState}`);
         }
+        if (previousState === newState) return;
+        if (game.user.isGM) console.log(`PatrolToken ${this.token.name} state changed from ${Object.keys(PatrolToken.STATES)[previousState]} to ${Object.keys(PatrolToken.STATES)[newState]}`); // REMOVE
+        
         this.#state = newState;
-        this.onStateChange(newState);
+        this.resetStateCounters();
+        this.onStateChange(previousState, newState);
+    }
+
+    onStateChange(previousState, currentState) { }
+
+    resetStateCounters() {
+        this.#suspicious = 0;
+        this.#alerted = 0;
     }
 
     get token() {
@@ -334,9 +350,51 @@ class PatrolToken {
 
     // --- stepping ---
 
+    updateState() {
+        if (this.state === PatrolToken.STATES.PATROLLING) {
+            const spotted = this.spotEnemy();
+            if (spotted) {
+                // TODO: Yellow question mark
+                this.state = PatrolToken.STATES.SUSPICIOUS;
+                return;
+            }
+        } else if (this.state === PatrolToken.STATES.SUSPICIOUS) {
+            this.#suspicious++;
+            if (this.#suspicious < MAX_SUSPICIOUS) {
+                // TODO: Maybe look around
+                return;
+            }
+            const spotted = this.spotEnemy();
+            if (spotted) {
+                // TODO: Yellow question mark
+                this.state = PatrolToken.STATES.ALERTED;
+            } else {
+                this.state = PatrolToken.STATES.PATROLLING;
+            }
+        } else if (this.state === PatrolToken.STATES.ALERTED) {
+            const spotted = this.spotEnemy();
+            if (spotted) {
+                this.#alerted++;
+                if (this.#alerted > MAX_ALERTED) {
+                    // TODO: Red exlamation mark and SPOTTED
+                    ui.notifications.warn(`Patrol | ${this.token.name} has spotted somebody!`);
+                    this.state = PatrolToken.STATES.PATROLLING;
+                    return;
+                }
+            } else {
+                if (this.#step >= this.#path.length) {
+                    this.state = PatrolToken.STATES.SUSPICIOUS;
+                    return;
+                }
+            }
+        }
+
+        return true;
+    }
+
     async step() {
 
-        this.spotEnemy();
+        if (!this.updateState()) return;
 
         if (this.#step >= this.#path.length) {
             this.computePath();
@@ -421,8 +479,6 @@ class PatrolToken {
     // --- pathfinding ---
 
     spotEnemy() {
-        if (this.state !== PatrolToken.STATES.PATROLLING) return false;
-
         const visionSource = new CONFIG.Canvas.visionSourceClass({object: this.token});
         visionSource.initialize(this.token._getVisionSourceData());
         if (!visionSource?.los) return false;
