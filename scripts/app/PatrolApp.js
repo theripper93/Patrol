@@ -1,6 +1,6 @@
 import { MODULE_ID } from "../main.js";
 import { getSetting } from "../settings.js";
-import { HandlebarsApplication, mergeObject } from "../lib/utils.js";
+import { HandlebarsApplication, mergeObject, canTokenSeeToken } from "../lib/utils.js";
 
 const TOKENS_OPEN_DOORS = true;
 
@@ -423,26 +423,30 @@ class PatrolToken {
     spotEnemy() {
         if (this.state !== PatrolToken.STATES.PATROLLING) return false;
 
+        const visionSource = new CONFIG.Canvas.visionSourceClass({object: this.token});
+        visionSource.initialize(this.token._getVisionSourceData());
+        if (!visionSource?.los) return false;
+
         for (const enemy of canvas.tokens.placeables) {
             if (enemy.id === this.token.id) continue;
             if (!enemy.actor?.hasPlayerOwner) continue;
-            const enemyCenter = enemy.center;
 
-            const visionSourceData = this.token._getVisionSourceData();
-            const sightPolygon = CONFIG.Canvas.polygonBackends.sight.create(visionSourceData, {
-                ...visionSourceData,
-                level: this.token.document.parent.levels.get(visionSourceData.level)
-            });
+            const spotted = canTokenSeeToken(this.token, enemy, visionSource);
+            if (!spotted) continue;
 
-            if (!sightPolygon?.contains(enemyCenter.x, enemyCenter.y)) continue;
-
-            const enemyOffset = canvas.grid.getOffset(enemyCenter);
+            const enemyOffset = canvas.grid.getOffset(enemy.center);
             this.computePath(enemyOffset);
             if (this.path.length === 0) this.computePath();
             return true;
         }
 
         return false;
+    }
+
+    #createVisionSource() {
+        const source = new CONFIG.Canvas.visionSourceClass({object: this.token});
+        source.initialize(this.token._getVisionSourceData());
+        return source;
     }
 
     computePath(specificDestination = null) {

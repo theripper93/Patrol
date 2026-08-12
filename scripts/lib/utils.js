@@ -527,3 +527,50 @@ export function addColorPicker(input, { value, opacity = false } = {}) {
     textInput.after(colorPickerElement);
     opacity && colorPickerElement.after(alphaPickerElement);
 }
+
+// jsdoc
+/**
+ * Check if a token can see another token
+ * @param {Token|TokenDocument} token - The token to check, can be Token or TokenDocument
+ * @param {Token|TokenDocument} target - The target token to check, can be Token or TokenDocument
+ * @param {VisionSource} visionSource - The vision source to use
+ * @returns {boolean|undefined} True if the token can see the target, false otherwise
+ */
+export function canTokenSeeToken(token, target, visionSource = null) {
+    token = token.document ?? token;
+    target = target.document ?? target;
+
+    // Skip hidden tokens for non-GM users
+    if (target.hidden) return false;
+    if (!token.object) return undefined;
+    if (token.parent !== game.scenes.viewed) return undefined;
+    if (token.parent !== target.parent) return undefined;
+
+    if (!visionSource) {
+        visionSource = new CONFIG.Canvas.visionSourceClass({object: token.object});
+        visionSource.initialize(token.object._getVisionSourceData());
+    }
+    if (!visionSource?.los) return false;
+
+    // Build visibility test configuration for this target
+    const testPoints = target.getVisibilityTestPoints();
+    const level = token.parent.levels.get(target.level);
+    const tests = testPoints.map(p => ({
+        point: {x: p.x, y: p.y, elevation: p.elevation},
+        level,
+        los: new Map()
+    }));
+
+    // Check each detection mode of the patrol token
+    let canSee = false;
+    for (const [key, modeConfig] of Object.entries(token.detectionModes)) {
+        const detectionMode = CONFIG.Canvas.detectionModes[key];
+        if (!detectionMode) continue;
+        if (detectionMode.testVisibility(visionSource, modeConfig, { object: target.object, level, tests })) {
+            canSee = true;
+            break;
+        }
+    }
+    
+    return canSee;
+}
