@@ -425,9 +425,16 @@ class PatrolToken {
 
         for (const enemy of canvas.tokens.placeables) {
             if (enemy.id === this.token.id) continue;
-            if (!enemy.actor.hasPlayerOwner) continue;
+            if (!enemy.actor?.hasPlayerOwner) continue;
             const enemyCenter = enemy.center;
-            if (!this.token.vision?.testPoint(enemyCenter)) continue;
+
+            const visionSourceData = this.token._getVisionSourceData();
+            const sightPolygon = CONFIG.Canvas.polygonBackends.sight.create(visionSourceData, {
+                ...visionSourceData,
+                level: this.token.document.parent.levels.get(visionSourceData.level)
+            });
+
+            if (!sightPolygon?.contains(enemyCenter.x, enemyCenter.y)) continue;
 
             const enemyOffset = canvas.grid.getOffset(enemyCenter);
             this.computePath(enemyOffset);
