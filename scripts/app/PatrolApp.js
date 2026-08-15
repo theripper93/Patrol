@@ -3,8 +3,6 @@ import { getSetting } from "../settings.js";
 import { HandlebarsApplication, mergeObject, canTokenSeeToken } from "../lib/utils.js";
 import { Patrol } from "./Patrol.js";
 
-const TOKENS_OPEN_DOORS = true;
-
 export class PatrolApp extends HandlebarsApplication {
 
     #stepping = false;

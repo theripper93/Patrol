@@ -26,6 +26,12 @@ export function registerSettings() {
             default: {},
             scope: "world",
             config: false
+        },
+        tokensOpenDoors: {
+            type: Boolean,
+            default: true,
+            scope: "world",
+            config: false
         }
     };
 

@@ -14,6 +14,8 @@ Hooks.on("init", () => {
 
 Hooks.on("ready", () => {
     Patrol.init();
+    window.patrolApp = new PatrolApp();
+    window.patrolApp.render({ force: true });
 });
 
 setupHooks();

@@ -1,3 +1,6 @@
+import { getSetting } from "../settings.js";
+import { PatrolToken } from "./PatrolToken.js";
+
 export class Patrol {
     static areas = {};
     static sections = {};
@@ -50,12 +53,12 @@ export class Patrol {
         this.#tokens.clear();
     }
 
-    static toggleStepping(toggle) {
+    static async toggleStepping(toggle) {
         this.#stepping = toggle;
         if (toggle) {
             if (!Patrol.tokensStepTask) {
                 Patrol.tokensStepTask = true;
-                Patrol.stepAllTokens();
+                await Patrol.stepAllTokens();
             }
         } else {
             if (Patrol.tokensStepTask) {
@@ -67,14 +70,15 @@ export class Patrol {
     static async stepToken(token) {
         const pt = Patrol.getToken(token.id);
         if (!pt) return;
-        await pt.step();
+        return pt.step();
     }
 
     static async stepAllTokens() {
+        const movementAnimationPromises = [];
         for (const token of canvas.tokens.placeables) {
             await Patrol.stepToken(token);
         }
-        if (Patrol.tokensStepTask) Patrol.stepAllTokens();
+        if (Patrol.tokensStepTask) await Patrol.stepAllTokens();
     }
 
     static getAdjacentOffsets(cell, options = { diagonals: true }) {
@@ -107,7 +111,7 @@ export class Patrol {
                 if (!wall) { result.blocked = true; continue; }
                 if (wall.isDoor) {
                     result.door = wall;
-                    if (!wall.isOpen && !TOKENS_OPEN_DOORS) result.blocked = true; // closed/locked doors block
+                    if (!wall.isOpen && !getSetting("tokensOpenDoors")) result.blocked = true; // closed/locked doors block
                 } else {
                     result.blocked = true;
                 }

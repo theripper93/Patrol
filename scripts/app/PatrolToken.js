@@ -1,3 +1,5 @@
+import { canTokenSeeToken } from "../lib/utils.js";
+import { getSetting } from "../settings.js";
 import { Patrol } from "./Patrol.js";
 
 const MAX_LOITER = 5;
@@ -5,7 +7,7 @@ const MAX_SUSPICIOUS = 5;
 const MAX_ALERTED = 5;
 const MAX_RETREAT = 5;
 
-class PatrolToken {
+export class PatrolToken {
     #token;
     #area;
     #step = 0;
@@ -223,8 +225,7 @@ class PatrolToken {
 
         if (this.#step >= this.#path.length) {
             this.computePath();
-            this.step();
-            return;
+            return this.step();
         }
 
         let next = this.#path[this.#step];
@@ -270,8 +271,7 @@ class PatrolToken {
                 }
                 this.#retreat++;
                 if (this.#retreating && this.#step > 0) this.#step--;
-                this.step();
-                return;
+                return this.step();
             }
         }
 
@@ -285,20 +285,21 @@ class PatrolToken {
             this.#step++;
         }
 
-        if (this.#lastDoor && this.#lastDoor.isOpen && TOKENS_OPEN_DOORS) {
+        if (this.#lastDoor && this.#lastDoor.isOpen && getSetting("tokensOpenDoors")) {
             const chanceToCloseDoor = Math.random() < 0.5;
             if (chanceToCloseDoor) this.#lastDoor.update({ ds: CONST.WALL_DOOR_STATES.CLOSED });
             this.#lastDoor = null;
         }
 
         if (next.door) {
-            if (TOKENS_OPEN_DOORS) {
+            if (getSetting("tokensOpenDoors")) {
                 if (!next.door.isOpen) next.door.update({ ds: CONST.WALL_DOOR_STATES.OPEN });
                 this.#lastDoor = next.door;
             }
         }
 
-        return this.token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true } });
+        await this.token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true } });
+        // if (this.token.document.movementAnimationPromise) return this.token.document.movementAnimationPromise;
     }
 
     // --- pathfinding ---
@@ -331,17 +332,17 @@ class PatrolToken {
     }
 
     computePath(specificDestination = null) {
-        const areaId = this.area;
-        if (!areaId) return;
 
         const { destination, validCells } = specificDestination ? {
             destination: specificDestination,
             validCells: []
         } : this.#getNextDestination();
 
+        const regionId = Patrol.areas[this.area]?.regionId;
+        const region = regionId ? canvas.scene.regions.get(regionId) : null;
+        
         const start = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
-        const region = canvas.scene.regions.get(Patrol.areas[areaId].regionId);
-        const path = this.#getPathFromTo(region, validCells, start, destination, !!specificDestination);
+        const path = this.#getPathFromTo(region, validCells, start, destination, !!specificDestination || !region);
 
         if (!this.#graphicAdded) {
             canvas.primary.addChild(this.#graphic);
@@ -369,14 +370,9 @@ class PatrolToken {
     }
 
     #getNextDestination() {
-        const areaId = this.area;
-        if (!areaId) return;
-
-        const areaData = Patrol.areas[areaId];
-        if (!areaData) return;
-
-        const region = canvas.scene.regions.get(areaData.regionId);
-        if (!region) return;
+        this.area ??= this.getNextArea();
+        const regionId = Patrol.areas[this.area]?.regionId;
+        const region = regionId ? canvas.scene.regions.get(regionId) : null;
 
         const startOffset = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
         const visited = new Set();
@@ -403,7 +399,7 @@ class PatrolToken {
                 if (Patrol.wallBetween(cell, neighbor, wallCache).blocked) continue;
 
                 // Must have enough space for the token to fit
-                if (!this.#tokenFits(neighbor, region, wallCache)) continue;
+                if (!this.#tokenFits(neighbor, region, wallCache, !region)) continue;
 
                 visited.add(key);
                 frontier.push(neighbor);
