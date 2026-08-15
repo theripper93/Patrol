@@ -1,7 +1,7 @@
 import { setupHooks } from "./config.js";
+import { Patrol } from "./app/Patrol.js";
 import { PatrolApp } from "./app/PatrolApp.js";
 import { registerSettings } from "./settings.js";
-import { init } from "./app/PatrolApp.js";
 import "./app/PatrolRegionBehavior.js";
 
 import "../style/module.scss";
@@ -13,7 +13,7 @@ Hooks.on("init", () => {
 });
 
 Hooks.on("ready", () => {
-    init();
+    Patrol.init();
 });
 
 setupHooks();
