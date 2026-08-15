@@ -2,6 +2,7 @@ import { setupHooks } from "./config.js";
 import { PatrolApp } from "./app/PatrolApp.js";
 import { registerSettings } from "./settings.js";
 import { init } from "./app/PatrolApp.js";
+import "./app/PatrolRegionBehavior.js";
 
 import "../style/module.scss";
 

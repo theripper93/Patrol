@@ -32,6 +32,11 @@
   "styles": [
     "styles/module.css"
   ],
+  "documentTypes": {
+    "RegionBehavior": {
+      "patrol": {}
+    }
+  },
   "socket": true,
   "url": "https://github.com/theripper93/Patrol",
   "manifest": "https://github.com/theripper93/Patrol/releases/latest/download/module.json",
