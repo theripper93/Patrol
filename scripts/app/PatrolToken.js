@@ -299,7 +299,7 @@ export class PatrolToken {
         }
 
         await this.token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true } });
-        // if (this.token.document.movementAnimationPromise) return this.token.document.movementAnimationPromise;
+        if (this.token.movementAnimationPromise) return this.token.movementAnimationPromise;
     }
 
     // --- pathfinding ---

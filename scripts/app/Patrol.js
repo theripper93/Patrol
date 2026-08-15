@@ -39,7 +39,6 @@ export class Patrol {
             const pt = new PatrolToken(token);
             pt.initArea();
             if (pt.area) {
-                pt.computePath();
                 this.#tokens.set(token.id, pt);
             }
         }
@@ -58,7 +57,7 @@ export class Patrol {
         if (toggle) {
             if (!Patrol.tokensStepTask) {
                 Patrol.tokensStepTask = true;
-                await Patrol.stepAllTokens();
+                Patrol.stepAllTokens();
             }
         } else {
             if (Patrol.tokensStepTask) {
@@ -70,15 +69,14 @@ export class Patrol {
     static async stepToken(token) {
         const pt = Patrol.getToken(token.id);
         if (!pt) return;
-        return pt.step();
+        await pt.step();
+        if (Patrol.tokensStepTask) Patrol.stepToken(token);
     }
 
     static async stepAllTokens() {
-        const movementAnimationPromises = [];
         for (const token of canvas.tokens.placeables) {
-            await Patrol.stepToken(token);
+            Patrol.stepToken(token);
         }
-        if (Patrol.tokensStepTask) await Patrol.stepAllTokens();
     }
 
     static getAdjacentOffsets(cell, options = { diagonals: true }) {
