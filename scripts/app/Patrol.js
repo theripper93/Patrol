@@ -39,7 +39,7 @@ export class Patrol {
         }
     }
 
-    static async stepToken(token) {
+    static async stepToken(token, backward) {
         const isPatroller = token.document.getFlag(MODULE_ID, "enablePatrol"); 
         let pt = Patrol.getToken(token.id);
         if (!pt && isPatroller) {
@@ -51,13 +51,13 @@ export class Patrol {
         } else if (!pt && !isPatroller) {
             return;
         }
-        await pt.step();
-        if (Patrol.tokensStepTask) Patrol.stepToken(token);
+        await pt.step(backward);
+        if (Patrol.tokensStepTask) Patrol.stepToken(token, backward);
     }
 
-    static async stepAllTokens() {
+    static async stepAllTokens(backward) {
         for (const token of canvas.tokens.placeables) {
-            Patrol.stepToken(token);
+            Patrol.stepToken(token, backward);
         }
     }
 

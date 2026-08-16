@@ -68,16 +68,20 @@ export class PatrolApp extends HandlebarsApplication {
         this.render();
     }
 
-    static async stepForward() {
+    async step(backward) {
         if (this.#allTokens) {
-            Patrol.stepAllTokens();
+            Patrol.stepAllTokens(backward);
         } else {
-            Patrol.stepToken(_token);
+            Patrol.stepToken(_token, backward);
         }
     }
 
-    static async stepBackward() {
+    static async stepForward() {
+        this.step(false);
+    }
 
+    static async stepBackward() {
+        this.step(true);
     }
 
     static async toggleStepping() {

@@ -117,12 +117,12 @@ export class PatrolToken {
     }
 
     getAllowedRegions(token) {
-        const canvas = this.token.document.parent;
-        const regions = canvas.regions.placeables;
+        const scene = this.token.document.parent;
+        const regions = scene.regions.contents;
 
         const allowed = [];
         for (const region of regions) {
-            const behavior = region.document.behaviors.contents.find(b => b.type === "patrol.patrol");
+            const behavior = region.behaviors.contents.find(b => b.type === "patrol.patrol");
             if (!behavior) continue;
 
             const blacklist = behavior.system.blacklist;
@@ -181,11 +181,20 @@ export class PatrolToken {
         return true;
     }
 
-    async step() {
+    async step(backward = false) {
 
         if (!this.updateState()) return;
 
-        if (this.#step >= this.#path.length) {
+        const lastStep = this.#path[this.#step];
+        if (lastStep && (this.token.x !== lastStep.x || this.token.y !== lastStep.y)) {
+            this.computePath();
+            return;
+        }
+
+        if (this.#retreating || backward) this.#step--;
+        else this.#step++;
+
+        if ((this.#step >= this.#path.length) || (this.#step < 0)) {
             this.computePath();
             return this.step();
         }
@@ -227,24 +236,14 @@ export class PatrolToken {
                 }
 
                 this.#retreating = !this.#retreating;
-                if (this.#retreat > MAX_RETREAT) {
+                this.#retreat++;
+                if (this.#retreat >= MAX_RETREAT) {
                     this.computePath();
                     return;
                 }
-                this.#retreat++;
-                if (this.#retreating && this.#step > 0) this.#step--;
+                // if (this.#retreating && this.#step > 0) this.#step--;
                 return this.step();
             }
-        }
-
-        if (this.#retreating) {
-            if (this.#step === 0) {
-                this.computePath();
-                return;
-            }
-            this.#step--;
-        } else {
-            this.#step++;
         }
 
         if (this.#lastDoor && this.#lastDoor.isOpen && getSetting("tokensOpenDoors")) {
@@ -303,7 +302,7 @@ export class PatrolToken {
         const region = this.region;
         
         const start = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
-        const path = this.#getPathFromTo(this.region, validCells, start, destination, !!specificDestination || !this.region);
+        const path = this.#getPathFromTo(validCells, start, destination, !!specificDestination || !this.region);
 
         if (!this.#graphicAdded) {
             canvas.primary.addChild(this.#graphic);
@@ -441,7 +440,7 @@ export class PatrolToken {
             if (iterations > 100000) break;
         }
 
-        path.pop(); // Remove the starting point, as the token is already there
+        // path.pop(); // Remove the starting point, as the token is already there
         return path.reverse();
     }
 }
