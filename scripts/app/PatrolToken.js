@@ -1,3 +1,4 @@
+import { MODULE_ID } from "../main.js";
 import { canTokenSeeToken } from "../lib/utils.js";
 import { getSetting } from "../settings.js";
 import { Patrol } from "./Patrol.js";
@@ -9,7 +10,7 @@ const MAX_RETREAT = 5;
 
 export class PatrolToken {
     #token;
-    #area;
+    #region;
     #step = 0;
     #loiter = 0;
     #retreat = 0;
@@ -65,12 +66,12 @@ export class PatrolToken {
         return this.#token;
     }
 
-    get area() {
-        return this.#area;
+    get region() {
+        return this.#region;
     }
 
-    set area(areaId) {
-        this.#area = areaId;
+    set region(value) {
+        this.#region = value;
     }
 
     get currentStepIndex() {
@@ -81,98 +82,59 @@ export class PatrolToken {
         return this.#path;
     }
 
-    // --- area selection ---
+    // --- region selection ---
 
-    initArea() {
-        const areaId = this.getCurrentArea();
-        if (!areaId) return;
-        this.area = areaId;
-        return areaId;
-    }
+    getCurrentRegion() {
+        const allowedRegions = this.getAllowedRegions(this.token);
+        if (!allowedRegions.length) return;
 
-    getCurrentArea() {
-        const allowedAreasIds = this.getAllowedAreas(null, this.token.id);
-        if (!allowedAreasIds.length) return;
-
-        for (const areaId of allowedAreasIds) {
-            const areaData = Patrol.areas[areaId];
-            const region = canvas.scene.regions.get(areaData.regionId);
-            if (!region) continue;
-
-            if (region.polygonTree.testPoint(this.token.center)) return areaId;
+        for (const region of allowedRegions) {
+            if (region.polygonTree.testPoint(this.token.center)) return region;
         }
     }
 
-    getNextArea() {
-        const isPatroller = this.token.actor?.getFlag(MODULE_ID, "isPatroller");
-        if (!isPatroller) return;
+    getNextRegion() {
 
-        const currentTokenArea = this.area;
-        if (!currentTokenArea) return;
+        const allowedRegions = this.getAllowedRegions(this.token);
+        if (!allowedRegions.length) return;
 
-        const allowedAreas = this.getAllowedAreas(currentTokenArea, this.token.id);
-        if (!allowedAreas.length) return currentTokenArea;
+        const selectedRegion = this.getRandomRegion(allowedRegions);
 
-        const selectedArea = this.getRandomArea(allowedAreas);
-        this.area = selectedArea;
-
-        return selectedArea;
+        return selectedRegion;
     }
 
-    getRandomArea(allowedAreas) {
-        const total = Object.values(allowedAreas).reduce((sum, value) => sum + value.weight, 0);
+    setNextRegion() {
+        this.region = this.getNextRegion();
+    }
+
+    getRandomRegion(allowedRegions) {
+        const total = Object.values(allowedRegions).reduce((sum, value) => sum + value.weight, 0);
         let rand = Math.random() * total;
-        for (const [areaId, weight] of Object.entries(allowedAreas)) {
+        for (const [region, weight] of Object.entries(allowedRegions)) {
             rand -= weight;
-            if (rand <= 0) return areaId;
+            if (rand <= 0) return region;
         }
     }
 
-    getAllowedAreas(areaId, tokenId) {
-        const connectedAreasIds = areaId ? Patrol.areas[areaId]?.connectedAreas : Object.keys(Patrol.areas);
-        if (!connectedAreasIds) return [];
+    getAllowedRegions(token) {
+        const canvas = this.token.document.parent;
+        const regions = canvas.regions.placeables;
 
-        const allowedAreas = [];
-        for (const connectedAreaId of connectedAreasIds) {
-            const connectedArea = Patrol.areas[connectedAreaId];
+        const allowed = [];
+        for (const region of regions) {
+            const behavior = region.document.behaviors.contents.find(b => b.type === "patrol.patrol");
+            if (!behavior) continue;
 
-            // If token is blacklisted, skip this area
-            const areaBlacklist = connectedArea.blacklist;
-            const isBlacklistedInArea = areaBlacklist.has(tokenId);
-            if (isBlacklistedInArea) continue;
+            const blacklist = behavior.system.blacklist;
+            if (blacklist.has(token.id)) continue;
 
-            // If a whitelist exists, check if the token is whitelisted
-            const areaWhitelist = connectedArea.whitelist;
-            const isWhitelistedInArea = areaWhitelist.size === 0 || areaWhitelist.has(tokenId);
-            if (isWhitelistedInArea) {
-                allowedAreas.push(connectedAreaId);
-                continue;
-            }
+            const whitelist = behavior.system.whitelist;
+            if (whitelist.size > 0 && !whitelist.has(token.id)) continue;
 
-            // If a section exists, check if the token is blacklisted or whitelisted in the section
-            // If this area is not in a section, allow the token to enter it as it passed the previous checks
-            const sectionId = connectedArea.section;
-            const sectionData = Patrol.sections[sectionId];
-            if (!sectionData) {
-                allowedAreas.push(connectedAreaId);
-                continue;
-            };
-
-            const sectionBlacklist = sectionData.blacklist;
-            const isBlacklistedInSection = sectionBlacklist.has(tokenId);
-            if (isBlacklistedInSection) continue;
-
-            const sectionWhitelist = sectionData.whitelist;
-            const isWhitelistedInSection = sectionWhitelist.size === 0 || sectionWhitelist.has(tokenId);
-            if (isWhitelistedInSection) {
-                allowedAreas.push(connectedAreaId);
-                continue;
-            }
-
-            allowedAreas.push(connectedAreaId);
+            allowed.push(region.id);
         }
 
-        return allowedAreas;
+        return allowed;
     }
 
     // --- stepping ---
@@ -338,11 +300,10 @@ export class PatrolToken {
             validCells: []
         } : this.#getNextDestination();
 
-        const regionId = Patrol.areas[this.area]?.regionId;
-        const region = regionId ? canvas.scene.regions.get(regionId) : null;
+        const region = this.region;
         
         const start = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
-        const path = this.#getPathFromTo(region, validCells, start, destination, !!specificDestination || !region);
+        const path = this.#getPathFromTo(this.region, validCells, start, destination, !!specificDestination || !this.region);
 
         if (!this.#graphicAdded) {
             canvas.primary.addChild(this.#graphic);
@@ -370,9 +331,7 @@ export class PatrolToken {
     }
 
     #getNextDestination() {
-        this.area ??= this.getNextArea();
-        const regionId = Patrol.areas[this.area]?.regionId;
-        const region = regionId ? canvas.scene.regions.get(regionId) : null;
+        this.setNextRegion();
 
         const startOffset = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
         const visited = new Set();
@@ -391,15 +350,17 @@ export class PatrolToken {
                 const key = `${neighbor.i},${neighbor.j}`;
                 if (visited.has(key)) continue;
 
-                // Must be inside the region polygon
-                const center = canvas.grid.getCenterPoint(neighbor);
-                if (!region.polygonTree.testPoint(center)) continue;
+                if (this.region) {
+                    // Must be inside the region polygon
+                    const center = canvas.grid.getCenterPoint(neighbor);
+                    if (!this.region.polygonTree.testPoint(center)) continue;
+                }
 
                 // Must not be blocked by a wall
                 if (Patrol.wallBetween(cell, neighbor, wallCache).blocked) continue;
 
                 // Must have enough space for the token to fit
-                if (!this.#tokenFits(neighbor, region, wallCache, !region)) continue;
+                if (!this.#tokenFits(neighbor, wallCache, !this.region)) continue;
 
                 visited.add(key);
                 frontier.push(neighbor);
@@ -412,7 +373,7 @@ export class PatrolToken {
         }
     }
 
-    #tokenFits(cell, region, wallCache, ignoreBoundaries = false) {
+    #tokenFits(cell, wallCache, ignoreBoundaries = false) {
         const height = this.token.document.height;
         const width = this.token.document.width;
 
@@ -421,7 +382,9 @@ export class PatrolToken {
         for (let i = 0; i < height; i++) {
             for (let j = 0; j < width; j++) {
                 const subcell = { i: cell.i + i, j: cell.j + j };
-                if (!ignoreBoundaries && !region.polygonTree.testPoint(canvas.grid.getCenterPoint(subcell))) return false;
+                if (!ignoreBoundaries) {
+                    if (this.region && !this.region.polygonTree.testPoint(canvas.grid.getCenterPoint(subcell))) return false;
+                }
                 if (j < width - 1 && Patrol.wallBetween(subcell, { i: subcell.i, j: subcell.j + 1 }, wallCache).blocked) return false;
                 if (i < height - 1 && Patrol.wallBetween(subcell, { i: subcell.i + 1, j: subcell.j }, wallCache).blocked) return false;
             }
@@ -430,7 +393,7 @@ export class PatrolToken {
         return true;
     }
 
-    #getPathFromTo(region, cells, start, end, ignoreBoundaries = false) {
+    #getPathFromTo(cells, start, end, ignoreBoundaries = false) {
         const cellSet = new Set(cells.map(c => `${c.i},${c.j}`));
         const sk = `${start.i},${start.j}`;
         const ek = `${end.i},${end.j}`;
@@ -455,7 +418,7 @@ export class PatrolToken {
                 if (!ignoreBoundaries && !cellSet.has(nk)) continue;
                 const wall = Patrol.wallBetween(current, nb, wallCache);
                 if (wall.blocked) continue;
-                if (!this.#tokenFits(nb, region, wallCache, ignoreBoundaries)) continue;
+                if (!this.#tokenFits(nb, wallCache, ignoreBoundaries)) continue;
 
                 visited.add(nk);
                 parent.set(nk, {i: current.i, j: current.j, door: wall.door });

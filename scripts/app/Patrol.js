@@ -1,9 +1,8 @@
+import { MODULE_ID } from "../main.js";
 import { getSetting } from "../settings.js";
 import { PatrolToken } from "./PatrolToken.js";
 
 export class Patrol {
-    static areas = {};
-    static sections = {};
     static #tokens = new Map();
     static #stepping = false;
     static tokensStepTask = null;
@@ -16,33 +15,7 @@ export class Patrol {
         this.#stepping = value;
     }
 
-    static init() {
-        this.areas = getSetting("areas");
-        this.sections = getSetting("sections");
-
-        for (const areaId of Object.keys(this.areas)) {
-            this.areas[areaId].blacklist = new Set(this.areas[areaId].blacklist);
-            this.areas[areaId].whitelist = new Set(this.areas[areaId].whitelist);
-        }
-
-        for (const sectionId of Object.keys(this.sections)) {
-            this.sections[sectionId].blacklist = new Set(this.sections[sectionId].blacklist);
-            this.sections[sectionId].whitelist = new Set(this.sections[sectionId].whitelist);
-        }
-
-        this.initTokens();
-    }
-
-    static initTokens() {
-        this.#tokens.clear();
-        for (const token of canvas.tokens.placeables) {
-            const pt = new PatrolToken(token);
-            pt.initArea();
-            if (pt.area) {
-                this.#tokens.set(token.id, pt);
-            }
-        }
-    }
+    static init() {}
 
     static getToken(tokenId) {
         return this.#tokens.get(tokenId);
@@ -67,8 +40,17 @@ export class Patrol {
     }
 
     static async stepToken(token) {
-        const pt = Patrol.getToken(token.id);
-        if (!pt) return;
+        const isPatroller = token.document.getFlag(MODULE_ID, "enablePatrol"); 
+        let pt = Patrol.getToken(token.id);
+        if (!pt && isPatroller) {
+            pt = new PatrolToken(token);
+            this.#tokens.set(token.id, pt);
+        } else if (pt && !isPatroller) {
+            this.#tokens.delete(token.id);
+            return;
+        } else if (!pt && !isPatroller) {
+            return;
+        }
         await pt.step();
         if (Patrol.tokensStepTask) Patrol.stepToken(token);
     }
