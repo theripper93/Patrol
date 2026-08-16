@@ -186,20 +186,25 @@ export class PatrolToken {
         if (!this.updateState()) return;
 
         const lastStep = this.#path[this.#step];
-        if (lastStep && (this.token.x !== lastStep.x || this.token.y !== lastStep.y)) {
-            this.computePath();
-            return;
-        }
-
-        if (this.#retreating || backward) this.#step--;
-        else this.#step++;
-
-        if ((this.#step >= this.#path.length) || (this.#step < 0)) {
+        if (
+            lastStep &&
+            !this.token.movementAnimationPromise &&
+            (this.token.document.x !== lastStep.x || this.token.document.y !== lastStep.y)
+        ) {
             this.computePath();
             return this.step();
         }
 
-        let next = this.#path[this.#step];
+        let step = this.#step;
+        if (this.#retreating || backward) step--;
+        else step++;
+
+        if ((step >= this.#path.length) || (step < 0)) {
+            this.computePath();
+            return this.step();
+        }
+
+        let next = this.#path[step];
 
         const checkOccupied = true;
         if (checkOccupied) {
@@ -245,6 +250,8 @@ export class PatrolToken {
                 return this.step();
             }
         }
+
+        this.#step = step;
 
         if (this.#lastDoor && this.#lastDoor.isOpen && getSetting("tokensOpenDoors")) {
             const chanceToCloseDoor = Math.random() < 0.5;

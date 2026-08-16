@@ -5,7 +5,6 @@ import { Patrol } from "./Patrol.js";
 
 export class PatrolApp extends HandlebarsApplication {
 
-    #stepping = false;
     #allTokens = true;
 
     static get DEFAULT_OPTIONS() {
@@ -38,24 +37,14 @@ export class PatrolApp extends HandlebarsApplication {
 
     async _prepareContext(options) {
         const context = await super._prepareContext(options);
+        context.stepping = Patrol.stepping;
+        context.allTokens = this.#allTokens;
         return context;
     }
 
     async _onRender(context, options) {
         await super._onRender(context, options);
         const html = this.element;
-
-        const button = this.element.querySelector('[data-action="toggleStepping"]');
-        if (Patrol.stepping) {
-            button.classList.remove("fa-play");
-            button.classList.add("fa-pause");
-        } else {
-            button.classList.remove("fa-pause");
-            button.classList.add("fa-play");
-        }
-
-        this.element.querySelector('[data-action="selectSingle"]').setAttribute("aria-pressed", this.#allTokens ? "false" : "true");
-        this.element.querySelector('[data-action="selectAll"]').setAttribute("aria-pressed", this.#allTokens ? "true" : "false");
     }
 
     static async selectSingle() {
@@ -74,6 +63,7 @@ export class PatrolApp extends HandlebarsApplication {
         } else {
             Patrol.stepToken(_token, backward);
         }
+        this.render();
     }
 
     static async stepForward() {
