@@ -8,6 +8,8 @@ const MAX_SUSPICIOUS = 5;
 const MAX_ALERTED = 5;
 const MAX_RETREAT = 5;
 
+const WALL_CACHE = [];
+
 export class PatrolToken {
     #token;
     #region;
@@ -90,7 +92,7 @@ export class PatrolToken {
         if (set.has(this.token.document.name)) return true;
 
         if (!this.token.actor) return false;
-        
+
         if (set.has(this.token.actor.id)) return true;
         if (set.has(this.token.actor.uuid)) return true;
         if (set.has(this.token.actor.name)) return true;
@@ -200,7 +202,6 @@ export class PatrolToken {
     }
 
     async step(backward = false) {
-
         if (!this.updateState()) return;
 
         const lastStep = this.#path[this.#step];
@@ -318,14 +319,11 @@ export class PatrolToken {
     }
 
     computePath(specificDestination = null) {
-
         const { destination, validCells } = specificDestination ? {
             destination: specificDestination,
             validCells: []
         } : this.#getNextDestination();
 
-        const region = this.region;
-        
         const start = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
         const path = this.#getPathFromTo(validCells, start, destination, !!specificDestination || !this.region);
 

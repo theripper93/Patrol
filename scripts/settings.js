@@ -5,28 +5,6 @@ const DEFAULT_CACHE = false;
 
 export function registerSettings() {
     const settings = {
-        areas: {
-            type: Object,
-            default: {
-                "areaUuid0": {
-                    regionId: "6ifcCfqbiooy7Kpo",
-                    connectedAreas: [],
-                    blacklist: [], // Set of user IDs, supercedes whitelist
-                    whitelist: [], // Set of user IDs, ignored if empty
-                    section: null,
-                    weight: 1,
-                    cells: [],
-                },
-            },
-            scope: "world",
-            config: false
-        },
-        sections: {
-            type: Object,
-            default: {},
-            scope: "world",
-            config: false
-        },
         tokensOpenDoors: {
             type: Boolean,
             default: true,
