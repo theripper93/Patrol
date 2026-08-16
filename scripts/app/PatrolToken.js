@@ -84,57 +84,75 @@ export class PatrolToken {
 
     // --- region selection ---
 
-    getCurrentRegion() {
-        const allowedRegions = this.getAllowedRegions(this.token);
-        if (!allowedRegions.length) return;
+    containsToken(set) {
+        if (set.has(this.token.document.id)) return true;
+        if (set.has(this.token.document.uuid)) return true;
+        if (set.has(this.token.document.name)) return true;
 
-        for (const region of allowedRegions) {
-            if (region.polygonTree.testPoint(this.token.center)) return region;
-        }
+        if (!this.token.actor) return false;
+        
+        if (set.has(this.token.actor.id)) return true;
+        if (set.has(this.token.actor.uuid)) return true;
+        if (set.has(this.token.actor.name)) return true;
+
+        return false;
     }
 
-    getNextRegion() {
-
-        const allowedRegions = this.getAllowedRegions(this.token);
-        if (!allowedRegions.length) return;
-
-        const selectedRegion = this.getRandomRegion(allowedRegions);
-
-        return selectedRegion;
-    }
-
-    setNextRegion() {
-        this.region = this.getNextRegion();
-    }
-
-    getRandomRegion(allowedRegions) {
-        const total = Object.values(allowedRegions).reduce((sum, value) => sum + value.weight, 0);
-        let rand = Math.random() * total;
-        for (const [region, weight] of Object.entries(allowedRegions)) {
-            rand -= weight;
-            if (rand <= 0) return region;
-        }
-    }
-
-    getAllowedRegions(token) {
+    getAllowedRegions() {
         const scene = this.token.document.parent;
         const regions = scene.regions.contents;
 
+        const maxDistance = Math.hypot(canvas.dimensions.width, canvas.dimensions.height);
         const allowed = [];
         for (const region of regions) {
             const behavior = region.behaviors.contents.find(b => b.type === "patrol.patrol");
             if (!behavior) continue;
 
             const blacklist = behavior.system.blacklist;
-            if (blacklist.has(token.id)) continue;
+            if (this.containsToken(blacklist)) continue;
 
             const whitelist = behavior.system.whitelist;
-            if (whitelist.size > 0 && !whitelist.has(token.id)) continue;
+            if (whitelist.size > 0 && !this.containsToken(whitelist)) continue;
 
-            allowed.push(region.id);
+            const weight = maxDistance - Math.hypot(this.token.x - region.bounds.x, this.token.y - region.bounds.y);
+
+            allowed.push({
+                region: region,
+                weight: weight,
+            });
         }
 
         return allowed;
+    }
+    
+    getRandomRegion(allowedRegions) {
+        const total = allowedRegions.reduce((sum, value) => sum + value.weight, 0);
+        let rand = Math.random() * total;
+        for (const { region, weight } of allowedRegions) {
+            rand -= weight;
+            if (rand <= 0) return region;
+        }
+    }
+
+    getCurrentRegion() {
+        const allowedRegions = this.getAllowedRegions();
+        if (!allowedRegions.length) return;
+
+        for (const { region, weight } of allowedRegions) {
+            if (region.polygonTree.testPoint(this.token.center)) return region;
+        }
+    }
+
+    getNextRegion() {
+        const allowedRegions = this.getAllowedRegions();
+        if (!allowedRegions.length) return;
+
+        const selectedRegion = this.getRandomRegion(allowedRegions);
+        return selectedRegion;
+    }
+
+    setNextRegion() {
+        this.region = this.getNextRegion();
     }
 
     // --- stepping ---
@@ -344,6 +362,9 @@ export class PatrolToken {
         const frontier = [startOffset];
         const wallCache = new Map();
         const cells = [];
+        const cellsInsideRegion = [];
+
+        let insideRegion = this.region?.polygonTree.testPoint(this.token.center);
 
         const startKey = `${startOffset.i},${startOffset.j}`;
         visited.add(startKey);
@@ -351,30 +372,43 @@ export class PatrolToken {
         while (frontier.length > 0) {
             const cell = frontier.shift();
             cells.push({i: cell.i, j: cell.j});
+            if (insideRegion) cellsInsideRegion.push({i: cell.i, j: cell.j});
 
             for (const neighbor of Patrol.getAdjacentOffsets(cell, { diagonals: false })) {
                 const key = `${neighbor.i},${neighbor.j}`;
                 if (visited.has(key)) continue;
 
+                // Must not be blocked by a wall
+                if (Patrol.wallBetween(cell, neighbor, wallCache).blocked) continue;
+                
+                // Must have enough space for the token to fit
+                if (!this.#tokenFits(neighbor, wallCache, !this.region)) continue;
+
                 if (this.region) {
                     // Must be inside the region polygon
                     const center = canvas.grid.getCenterPoint(neighbor);
-                    if (!this.region.polygonTree.testPoint(center)) continue;
+                    if (!this.region.polygonTree.testPoint(center)) {
+                        if (insideRegion) continue;
+                    } else {
+                        if (!insideRegion) {
+                            insideRegion = true;
+                            frontier.length = 0;
+                            frontier.push(neighbor);
+                            visited.add(key);
+                            break;
+                        }
+                    }
                 }
-
-                // Must not be blocked by a wall
-                if (Patrol.wallBetween(cell, neighbor, wallCache).blocked) continue;
-
-                // Must have enough space for the token to fit
-                if (!this.#tokenFits(neighbor, wallCache, !this.region)) continue;
 
                 visited.add(key);
                 frontier.push(neighbor);
             }
         }
 
+        const relevantCells = insideRegion ? cellsInsideRegion : cells;
+
         return {
-            destination: cells[Math.floor(Math.random() * cells.length)],
+            destination: relevantCells[Math.floor(Math.random() * relevantCells.length)],
             validCells: cells
         }
     }
