@@ -13,6 +13,14 @@
                 "label": "Open Doors",
                 "hint": "Tokens can open doors when moving through them"
             }
+        },
+        "tokenConfig": {
+            "enablePatrol": {
+                "name": "Enable Random Patrol"
+            },
+            "enableSpotting": {
+                "name": "Spot Player Characters"
+            }
         }
     },
     "TYPES": {

@@ -10,6 +10,24 @@ export function registerSettings() {
             default: true,
             scope: "world",
             config: false
+        },
+        patrolAlertDelay: {
+            type: Number,
+            default: 3000,
+            scope: "world",
+            config: false
+        },
+        patrolSound: {
+            type: String,
+            default: "",
+            filePicker: true,
+            scope: "world",
+        },
+        patrolAlert: {
+            type: String,
+            default: "",
+            filePicker: true,
+            scope: "world",
         }
     };
 

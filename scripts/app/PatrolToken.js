@@ -2,6 +2,7 @@ import { MODULE_ID } from "../main.js";
 import { canTokenSeeToken } from "../lib/utils.js";
 import { getSetting } from "../settings.js";
 import { Patrol } from "./Patrol.js";
+import { patrolAlerted, patrolSpotted } from "../helpers.js";
 
 const MAX_LOITER = 5;
 const MAX_SUSPICIOUS = 5;
@@ -172,19 +173,21 @@ export class PatrolToken {
         if (this.state === PatrolToken.STATES.PATROLLING) {
             const spotted = this.spotEnemy();
             if (spotted) {
-                // TODO: Yellow question mark
+                patrolAlerted({ uuid: this.token.document.uuid });
                 this.state = PatrolToken.STATES.SUSPICIOUS;
                 return;
             }
         } else if (this.state === PatrolToken.STATES.SUSPICIOUS) {
             this.#suspicious++;
             if (this.#suspicious < MAX_SUSPICIOUS) {
-                // TODO: Maybe look around
+                const rotations = [0, 90, 180, 270];
+                const rotation = rotations[Math.floor(Math.random() * rotations.length)];
+                this.token.document.update({ rotation });
                 return;
             }
             const spotted = this.spotEnemy();
             if (spotted) {
-                // TODO: Yellow question mark
+                patrolSpotted({ uuid: this.token.document.uuid });
                 this.state = PatrolToken.STATES.ALERTED;
             } else {
                 this.state = PatrolToken.STATES.PATROLLING;
@@ -194,13 +197,14 @@ export class PatrolToken {
             if (spotted) {
                 this.#alerted++;
                 if (this.#alerted > MAX_ALERTED) {
-                    // TODO: Red exlamation mark and SPOTTED
-                    ui.notifications.warn(`Patrol | ${this.token.name} has spotted somebody!`);
+                    patrolSpotted({ uuid: this.token.document.uuid, pizzed: true });
+                    // ui.notifications.warn(`Patrol | ${this.token.name} has spotted somebody!`);
                     this.state = PatrolToken.STATES.PATROLLING;
                     return;
                 }
             } else {
                 if (this.#step >= this.#path.length) {
+                    patrolAlerted({ uuid: this.token.document.uuid });
                     this.state = PatrolToken.STATES.SUSPICIOUS;
                     return;
                 }
@@ -300,20 +304,15 @@ export class PatrolToken {
     spotEnemy() {
         if (!this.token.document.flags[MODULE_ID]?.enableSpotting) return false;
 
-        if (!this.visionSource) {
-            const visionSource = new CONFIG.Canvas.visionSourceClass({object: this.token});
-            visionSource.initialize(this.token._getVisionSourceData());
-            this.visionSource = visionSource;
-        } else {
-            this.visionSource.refresh();
-        }
-        if (!this.visionSource?.los) return false;
+        const visionSource = new CONFIG.Canvas.visionSourceClass({object: this.token});
+        visionSource.initialize(this.token._getVisionSourceData());
+        if (!visionSource?.los) return false;
         
         for (const enemy of canvas.tokens.placeables) {
             if (enemy.id === this.token.id) continue;
             if (!enemy.actor?.hasPlayerOwner) continue;
 
-            const spotted = canTokenSeeToken(this.token, enemy, this.visionSource);
+            const spotted = canTokenSeeToken(this.token, enemy, visionSource);
             if (!spotted) continue;
 
             const enemyOffset = canvas.grid.getOffset(enemy.center);
@@ -325,17 +324,11 @@ export class PatrolToken {
         return false;
     }
 
-    #createVisionSource() {
-        const source = new CONFIG.Canvas.visionSourceClass({object: this.token});
-        source.initialize(this.token._getVisionSourceData());
-        return source;
-    }
-
     computePath(specificDestination = null) {
         this.setNextRegion();
 
         let path;
-        if (this.isLinearPath()) {
+        if (this.isLinearPath() && !specificDestination) {
             path = this.computeClosePath();
         } else {
             const { destination, validCells } = specificDestination ? {
@@ -379,27 +372,29 @@ export class PatrolToken {
         const regionVertices = [];
 
         // Take polygon points
-        let tokenInRegion = false;
         for (let i = 0; i < points.length; i += 2) {
             const cell = canvas.grid.getOffset({ x: points[i], y: points[i + 1] });
             regionVertices.push(cell);
-            if (cell.i === tokenOffset.i && cell.j === tokenOffset.j) tokenInRegion = true;
         }
-
-        // Add token position if not in polygon
-        const regionBoundaryCells = [];
-        if (!tokenInRegion) {
-            const path = this.#getPathFromTo([], tokenOffset, regionVertices[0], true);
-            if (path.length > 0) regionBoundaryCells.push(...path);
-        }
-
+        
         // Add all other vertices
+        let tokenInRegion = false;
+        const regionBoundaryCells = [];
         for (let i = 0; i < regionVertices.length - 1; i++) {
             const path = this.#getPathFromTo([], regionVertices[i], regionVertices[i + 1], true);
             if (path.length > 0) {
                 if (path.length > 1) path.pop();
-                regionBoundaryCells.push(...path);
+                for (const cell of path) {
+                    if (cell.i === tokenOffset.i && cell.j === tokenOffset.j) tokenInRegion = true;
+                    regionBoundaryCells.push(cell);
+                }
             }
+        }
+        
+        // Add token position if not in polygon
+        if (!tokenInRegion) {
+            const path = this.#getPathFromTo([], tokenOffset, regionVertices[0], true);
+            if (path.length > 0) regionBoundaryCells.unshift(...path);
         }
 
         // Close the polygon
