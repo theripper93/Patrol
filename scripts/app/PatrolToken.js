@@ -8,8 +8,6 @@ const MAX_SUSPICIOUS = 5;
 const MAX_ALERTED = 5;
 const MAX_RETREAT = 5;
 
-const WALL_CACHE = [];
-
 export class PatrolToken {
     #token;
     #region;
@@ -80,11 +78,21 @@ export class PatrolToken {
         return this.#step;
     }
 
+    get nextStepOrCurrent() {
+        if (this.#step + 1 >= this.#path.length) return this.#path[this.#step];
+        return this.#path[this.#step + 1];
+    }
+
     get path() {
         return this.#path;
     }
 
     // --- region selection ---
+
+    isLinearPath() {
+        if (!this.region) return false;
+        return this.region.behaviors?.contents?.find(b => b.type === "patrol.patrol")?.system?.linearPath;
+    }
 
     containsToken(set) {
         if (set.has(this.token.document.id)) return true;
@@ -109,6 +117,7 @@ export class PatrolToken {
         for (const region of regions) {
             const behavior = region.behaviors.contents.find(b => b.type === "patrol.patrol");
             if (!behavior) continue;
+            if (behavior.disabled) continue;
 
             const blacklist = behavior.system.blacklist;
             if (this.containsToken(blacklist)) continue;
@@ -211,7 +220,7 @@ export class PatrolToken {
             (this.token.document.x !== lastStep.x || this.token.document.y !== lastStep.y)
         ) {
             this.computePath();
-            return this.step();
+            return;
         }
 
         let step = this.#step;
@@ -220,7 +229,8 @@ export class PatrolToken {
 
         if ((step >= this.#path.length) || (step < 0)) {
             this.computePath();
-            return this.step();
+            if (step > 1) this.step();
+            return;
         }
 
         let next = this.#path[step];
@@ -241,11 +251,11 @@ export class PatrolToken {
                 }
             });
 
-            if (occupied) {
-                const occupiedPT = Patrol.getToken(occupied.id);
-                const nextOccupiedCell = occupiedPT?.path[occupiedPT?.currentStepIndex];
-                if (nextOccupiedCell && this.token.bounds.contains(nextOccupiedCell.x, nextOccupiedCell.y)) occupied = null;
-            }
+            // if (occupied) {
+            //     const occupiedPT = Patrol.getToken(occupied.id);
+            //     const nextOccupiedCell = occupiedPT?.nextStepOrCurrent;
+            //     if (nextOccupiedCell && this.token.bounds.contains(nextOccupiedCell.x, nextOccupiedCell.y)) occupied = null;
+            // }
 
             const CHANCE_TO_LOITER = 0.8;
 
@@ -261,12 +271,8 @@ export class PatrolToken {
 
                 this.#retreating = !this.#retreating;
                 this.#retreat++;
-                if (this.#retreat >= MAX_RETREAT) {
-                    this.computePath();
-                    return;
-                }
-                // if (this.#retreating && this.#step > 0) this.#step--;
-                return this.step();
+                if (this.#retreat >= MAX_RETREAT) this.computePath();
+                return;
             }
         }
 
@@ -292,15 +298,22 @@ export class PatrolToken {
     // --- pathfinding ---
 
     spotEnemy() {
-        const visionSource = new CONFIG.Canvas.visionSourceClass({object: this.token});
-        visionSource.initialize(this.token._getVisionSourceData());
-        if (!visionSource?.los) return false;
+        if (!this.token.document.flags[MODULE_ID]?.enableSpotting) return false;
 
+        if (!this.visionSource) {
+            const visionSource = new CONFIG.Canvas.visionSourceClass({object: this.token});
+            visionSource.initialize(this.token._getVisionSourceData());
+            this.visionSource = visionSource;
+        } else {
+            this.visionSource.refresh();
+        }
+        if (!this.visionSource?.los) return false;
+        
         for (const enemy of canvas.tokens.placeables) {
             if (enemy.id === this.token.id) continue;
             if (!enemy.actor?.hasPlayerOwner) continue;
 
-            const spotted = canTokenSeeToken(this.token, enemy, visionSource);
+            const spotted = canTokenSeeToken(this.token, enemy, this.visionSource);
             if (!spotted) continue;
 
             const enemyOffset = canvas.grid.getOffset(enemy.center);
@@ -319,13 +332,20 @@ export class PatrolToken {
     }
 
     computePath(specificDestination = null) {
-        const { destination, validCells } = specificDestination ? {
-            destination: specificDestination,
-            validCells: []
-        } : this.#getNextDestination();
+        this.setNextRegion();
 
-        const start = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
-        const path = this.#getPathFromTo(validCells, start, destination, !!specificDestination || !this.region);
+        let path;
+        if (this.isLinearPath()) {
+            path = this.computeClosePath();
+        } else {
+            const { destination, validCells } = specificDestination ? {
+                destination: specificDestination,
+                validCells: []
+            } : this.#getNextDestination();
+            
+            const start = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
+            path = this.#getPathFromTo(validCells, start, destination, !!specificDestination || !this.region);
+        }
 
         if (!this.#graphicAdded) {
             canvas.primary.addChild(this.#graphic);
@@ -352,13 +372,46 @@ export class PatrolToken {
         this.#path = path;
     }
 
-    #getNextDestination() {
-        this.setNextRegion();
+    computeClosePath() {
+        const polygon = this.region.polygons[0];
+        const points = polygon.points;
+        const tokenOffset = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
+        const regionVertices = [tokenOffset];
+        // let tokenInPath = false;
+        for (let i = 0; i < points.length; i += 2) {
+            const cell = canvas.grid.getOffset({ x: points[i], y: points[i + 1] });
+            regionVertices.push(cell);
+            // if (cell.i === tokenOffset.i && cell.j === tokenOffset.j) tokenInPath = true;
+        }
+        // if (!tokenInPath) regionVertices.unshift(tokenOffset);
 
+        const regionBoundaryCells = [];
+        for (let i = 0; i < regionVertices.length - 1; i++) {
+            const currentCell = regionVertices[i];
+            const nextCell = regionVertices[i + 1];
+
+            const path = this.#getPathFromTo([], currentCell, nextCell, true);
+            if (path.length > 0) {
+                regionBoundaryCells.push(...path);
+            }
+        }
+        const currentCell = regionVertices[regionVertices.length - 1];
+        const nextCell = regionVertices[0];
+
+        const path = this.#getPathFromTo([], currentCell, nextCell, true);
+        if (path.length > 0) {
+            regionBoundaryCells.push(...path);
+        }
+
+        console.log(regionBoundaryCells);
+
+        return regionBoundaryCells;
+    }
+
+    #getNextDestination() {
         const startOffset = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
         const visited = new Set();
         const frontier = [startOffset];
-        const wallCache = new Map();
         const cells = [];
         const cellsInsideRegion = [];
 
@@ -377,10 +430,10 @@ export class PatrolToken {
                 if (visited.has(key)) continue;
 
                 // Must not be blocked by a wall
-                if (Patrol.wallBetween(cell, neighbor, wallCache).blocked) continue;
+                if (Patrol.wallBetween(cell, neighbor).blocked) continue;
                 
                 // Must have enough space for the token to fit
-                if (!this.#tokenFits(neighbor, wallCache, !this.region)) continue;
+                if (!this.#tokenFits(neighbor, !this.region)) continue;
 
                 if (this.region) {
                     // Must be inside the region polygon
@@ -411,7 +464,7 @@ export class PatrolToken {
         }
     }
 
-    #tokenFits(cell, wallCache, ignoreBoundaries = false) {
+    #tokenFits(cell, ignoreBoundaries = false) {
         const height = this.token.document.height;
         const width = this.token.document.width;
 
@@ -423,8 +476,8 @@ export class PatrolToken {
                 if (!ignoreBoundaries) {
                     if (this.region && !this.region.polygonTree.testPoint(canvas.grid.getCenterPoint(subcell))) return false;
                 }
-                if (j < width - 1 && Patrol.wallBetween(subcell, { i: subcell.i, j: subcell.j + 1 }, wallCache).blocked) return false;
-                if (i < height - 1 && Patrol.wallBetween(subcell, { i: subcell.i + 1, j: subcell.j }, wallCache).blocked) return false;
+                if (j < width - 1 && Patrol.wallBetween(subcell, { i: subcell.i, j: subcell.j + 1 }).blocked) return false;
+                if (i < height - 1 && Patrol.wallBetween(subcell, { i: subcell.i + 1, j: subcell.j }).blocked) return false;
             }
         }
 
@@ -441,7 +494,6 @@ export class PatrolToken {
         const parent = new Map();
         const visited = new Set();
         const frontier = [start];
-        const wallCache = new Map();
         visited.add(sk);
 
         while (frontier.length > 0) {
@@ -454,9 +506,9 @@ export class PatrolToken {
 
                 if (visited.has(nk)) continue;
                 if (!ignoreBoundaries && !cellSet.has(nk)) continue;
-                const wall = Patrol.wallBetween(current, nb, wallCache);
+                const wall = Patrol.wallBetween(current, nb);
                 if (wall.blocked) continue;
-                if (!this.#tokenFits(nb, wallCache, ignoreBoundaries)) continue;
+                if (!this.#tokenFits(nb, ignoreBoundaries)) continue;
 
                 visited.add(nk);
                 parent.set(nk, {i: current.i, j: current.j, door: wall.door });

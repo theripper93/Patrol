@@ -6,6 +6,8 @@ export class Patrol {
     static #tokens = new Map();
     static #stepping = false;
     static tokensStepTask = null;
+    static wallCache = new Map();
+    static minInterval = 200;
 
     static get stepping() {
         return this.#stepping;
@@ -51,7 +53,13 @@ export class Patrol {
         } else if (!pt && !isPatroller) {
             return;
         }
+        const now = performance.now();
         await pt.step(backward);
+
+        // Throttle
+        const elapsed = performance.now() - now;
+        if (elapsed < Patrol.minInterval) await new Promise(resolve => setTimeout(resolve, Patrol.minInterval - elapsed));
+
         if (Patrol.tokensStepTask) Patrol.stepToken(token, backward);
     }
 
@@ -69,12 +77,12 @@ export class Patrol {
         return allAdjacentOffsets;
     }
 
-    static wallBetween(cellA, cellB, cache) {
+    static wallBetween(cellA, cellB) {
         const keyA = `${cellA.i},${cellA.j}`;
         const keyB = `${cellB.i},${cellB.j}`;
         const cacheKey = keyA < keyB ? `${keyA}-${keyB}` : `${keyB}-${keyA}`;
 
-        if (cache.has(cacheKey)) return cache.get(cacheKey);
+        if (Patrol.wallCache.has(cacheKey)) return Patrol.wallCache.get(cacheKey);
 
         const centerA = canvas.grid.getCenterPoint(cellA);
         const centerB = canvas.grid.getCenterPoint(cellB);
@@ -99,7 +107,7 @@ export class Patrol {
         }
 
         // Only cache non-door results (door state can change)
-        if (!result.door) cache.set(cacheKey, result);
+        if (!result.door) Patrol.wallCache.set(cacheKey, result);
         return result;
     }
 
