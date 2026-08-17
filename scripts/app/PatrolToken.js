@@ -120,6 +120,7 @@ export class PatrolToken {
         const scene = this.token.document.parent;
         const regions = scene.regions.contents;
 
+        let atLeastOneWhitelisted = false;
         const maxDistance = Math.hypot(canvas.dimensions.width, canvas.dimensions.height);
         const allowed = [];
         for (const region of regions) {
@@ -130,16 +131,24 @@ export class PatrolToken {
             const blacklist = behavior.system.blacklist;
             if (this.containsToken(blacklist)) continue;
 
+            let whitelisted = false;
             const whitelist = behavior.system.whitelist;
-            if (whitelist.size > 0 && !this.containsToken(whitelist)) continue;
+            if (whitelist.size > 0) {
+                if (!this.containsToken(whitelist)) continue;
+                whitelisted = true;
+                atLeastOneWhitelisted = true;
+            } 
 
             const weight = maxDistance - Math.hypot(this.token.x - region.bounds.x, this.token.y - region.bounds.y);
 
             allowed.push({
                 region: region,
                 weight: weight,
+                whitelisted: whitelisted,
             });
         }
+
+        if (atLeastOneWhitelisted) return allowed.filter(r => r.whitelisted);
 
         return allowed;
     }
