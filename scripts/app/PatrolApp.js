@@ -11,6 +11,7 @@ export class PatrolApp extends HandlebarsApplication {
         return mergeObject(super.DEFAULT_OPTIONS, {
             window: {
                 contentClasses: ["standard-form"],
+                savePosition: true,
             },
             actions: {
                 selectSingle: this.selectSingle,
@@ -77,5 +78,21 @@ export class PatrolApp extends HandlebarsApplication {
     static async toggleStepping() {
         Patrol.toggleStepping(!Patrol.stepping);
         this.render();
+    }
+
+    toggle(toggle) {
+        if (!toggle) {
+            this.close();
+        } else {
+            this.render({ force: true });
+            Patrol.updateGraphics(true);
+        }
+    }
+
+    async _onClose() {
+        Patrol.updateGraphics(false);
+        await super._onClose();
+        ui.controls.controls.tokens.tools.patrolToggle.active = false;
+        ui.controls.render();
     }
 }

@@ -31,6 +31,10 @@ export class Patrol {
         this.wallCache.clear();
     }
 
+    static updateGraphics(toggle) {
+        for (const token of Patrol.#tokens.values()) token.updateGraphic(toggle);
+    }
+
     static async toggleStepping(toggle) {
         this.#stepping = toggle;
         if (toggle) {
@@ -43,6 +47,8 @@ export class Patrol {
                 Patrol.tokensStepTask = false;
             }
         }
+        ui.controls.controls.tokens.tools.patrolToggle.pip = toggle;
+        ui.controls.render();
     }
 
     static async stepToken(token, backward) {

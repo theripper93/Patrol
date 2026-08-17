@@ -2,8 +2,8 @@
     "patrol": {
         "patrol-app": {
             "title": "Patrol",
-            "selectAll": "Select All",
-            "selectSingle": "Select Single",
+            "selectAll": "Step All",
+            "selectSingle": "Step Selected",
             "stepBackward": "Step Backward",
             "stepForward": "Step Forward",
             "toggleStepping": "Toggle Stepping"
@@ -36,6 +36,17 @@
             },
             "enableSpotting": {
                 "name": "Spot Player Characters"
+            }
+        },
+        "statusEffects": {
+            "patrolundetectable": {
+                "name": "Patrol - Undetectable"
+            }
+        },
+        "tools": {
+            "patrolToggle": {
+                "app": "Toggle Patrol App",
+                "stepping": "Toggle Token Patrol"
             }
         }
     },

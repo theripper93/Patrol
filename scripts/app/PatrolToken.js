@@ -1,13 +1,13 @@
-import { MODULE_ID } from "../main.js";
+import { MODULE_ID, patrolApp } from "../main.js";
 import { canTokenSeeToken } from "../lib/utils.js";
 import { getSetting } from "../settings.js";
 import { Patrol } from "./Patrol.js";
 import { patrolAlerted } from "../helpers.js";
 
 const MAX_LOITER = 5;
-const MAX_SUSPICIOUS = 5;
-const MAX_ALERTED = 5;
 const MAX_RETREAT = 5;
+const CHANCE_TO_LOITER = 0.8;
+const CHANCE_TO_SWAP = 0.3;
 
 export class PatrolToken {
     #token;
@@ -20,7 +20,6 @@ export class PatrolToken {
     #alerted = 0;
     #retreating = false;
     #graphic;
-    #graphicAdded = false;
     #color;
     #path = [];
     #lastDoor;
@@ -38,6 +37,7 @@ export class PatrolToken {
     constructor(token) {
         this.#token = token;
         this.#graphic = new PIXI.Graphics();
+        canvas.primary.addChild(this.#graphic);
     }
 
     get state() {
@@ -204,8 +204,9 @@ export class PatrolToken {
                     return;
                 }
             } else {
-                if (this.#step >= this.#path.length) {
+                if (this.#step >= this.#path.length - 1) {
                     patrolAlerted({ uuid: this.token.document.uuid, type: "suspicious" });
+                    this.#suspicious = 0;
                     this.state = PatrolToken.STATES.SUSPICIOUS;
                     return;
                 }
@@ -256,13 +257,12 @@ export class PatrolToken {
                 }
             });
 
-            // if (occupied) {
-            //     const occupiedPT = Patrol.getToken(occupied.id);
-            //     const nextOccupiedCell = occupiedPT?.nextStepOrCurrent;
-            //     if (nextOccupiedCell && this.token.bounds.contains(nextOccupiedCell.x, nextOccupiedCell.y)) occupied = null;
-            // }
+            if (occupied) {
+                const occupiedPT = Patrol.getToken(occupied.id);
+                const nextOccupiedCell = occupiedPT?.nextStepOrCurrent;
+                if (nextOccupiedCell && Math.random() > CHANCE_TO_SWAP && this.token.bounds.contains(nextOccupiedCell.x, nextOccupiedCell.y)) occupied = null;
+            }
 
-            const CHANCE_TO_LOITER = 0.8;
 
             if (occupied) {
                 if (Math.random() < CHANCE_TO_LOITER) {
@@ -325,6 +325,24 @@ export class PatrolToken {
         return false;
     }
 
+    updateGraphic(toggle = true) {
+        this.#graphic.clear();
+        if (!toggle) return;
+
+        const width = this.token.w;
+        const height = this.token.h;
+
+        const newColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
+        this.#graphic.lineStyle(2, newColor);
+        this.#graphic.beginFill(newColor, 0.5);
+        for (const point of this.#path) {
+            this.#graphic.drawCircle(point.x + width / 2, point.y + height / 2, 10);
+        }
+        this.#graphic.endFill();
+
+        return newColor;
+    }
+
     computePath(specificDestination = null) {
         this.setNextRegion();
 
@@ -347,30 +365,15 @@ export class PatrolToken {
             const { destination, validCells } = this.#getNextDestination();
             path = this.#getPathFromTo(validCells, start, destination, !!specificDestination || !this.region);
         }
-
-        if (!this.#graphicAdded) {
-            canvas.primary.addChild(this.#graphic);
-            this.#graphicAdded = true;
-        }
-        this.#graphic.clear();
-
-        const width = this.token.w;
-        const height = this.token.h;
-
-        const newColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
-        this.#graphic.lineStyle(2, newColor);
-        this.#graphic.beginFill(newColor, 0.5);
-        for (const point of path) {
-            this.#graphic.drawCircle(point.x + width / 2, point.y + height / 2, 10);
-        }
-        this.#graphic.endFill();
-
+        
+        this.#path = path;
+        const color = this.updateGraphic(patrolApp.rendered);
+        
+        this.#color = color;
         this.#step = 0;
         this.#loiter = 0;
         this.#retreat = 0;
         this.#retreating = false;
-        this.#color = newColor;
-        this.#path = path;
     }
 
     computeClosePath() {

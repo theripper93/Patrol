@@ -1,7 +1,7 @@
 import { MODULE_ID } from "./main.js";
 
 const SETTING_CACHE = {};
-const DEFAULT_CACHE = false;
+const DEFAULT_CACHE = true;
 
 export function registerSettings() {
     const settings = {
@@ -23,6 +23,13 @@ export function registerSettings() {
             scope: "world",
             config: true,
         },
+        patrolAlert: {
+            type: String,
+            default: "",
+            filePicker: true,
+            scope: "world",
+            config: true,
+        },
         patrolSound: {
             type: String,
             default: "",
@@ -30,13 +37,6 @@ export function registerSettings() {
             scope: "world",
             config: true,
         },
-        patrolAlert: {
-            type: String,
-            default: "",
-            filePicker: true,
-            scope: "world",
-            config: true,
-        }
     };
 
     registerSettingsArray(settings);

@@ -1,10 +1,49 @@
-import { MODULE_ID } from "./main.js";
+import { MODULE_ID, patrolApp } from "./main.js";
 import { Patrol } from "./app/Patrol.js";
 
 export function setupHooks() {
     const onWallEdit = async (wall, update) => Patrol.clearWallCache();
     Hooks.on("drawWall", onWallEdit);
     Hooks.on("controlWall", onWallEdit);
+
+    Hooks.on("getSceneControlButtons", (controls, b, c) => {
+        if (game.user.isGM) {
+            controls.tokens.tools.patrolToggle = {
+                toggle: true,
+                active: false,
+                pip: false,
+                icon: "fas fa-walking",
+                name: "patrolToggle",
+                title: `<div class="toolclip">
+                    <p>
+                        <span class="reference">Left-Click</span>
+                        <strong>: ${game.i18n.localize(`${MODULE_ID}.tools.patrolToggle.app`)}</strong>
+                    </p>
+                    <p>
+                        <span class="reference">CTRL + Left-Click</span>
+                        <strong>: ${game.i18n.localize(`${MODULE_ID}.tools.patrolToggle.stepping`)}</strong>
+                    </p>
+                </div>`,
+                onChange: (event, toggle) => {
+                    if (event.altKey) {
+                        ui.controls.controls.tokens.tools.patrolToggle.active = !toggle;
+                        Patrol.toggleStepping(!Patrol.stepping);
+                        patrolApp.render();
+                        return;
+                    }
+                    patrolApp.toggle(toggle);
+                },
+            };
+        }
+    });
+
+    Hooks.on("ready", () => {
+        CONFIG.statusEffects["patrolundetectable"] = {
+            id: "patrolundetectable",
+            name: game.i18n.localize(`${MODULE_ID}.statusEffects.patrolundetectable.name`),
+            icon: "icons/svg/eye.svg",
+        };
+    });
 }
 
 const renderTokenConfig = (app, html, data) => {
@@ -36,5 +75,5 @@ const renderTokenConfig = (app, html, data) => {
     app.setPosition({ height: "auto" });
 }
 
-    Hooks.on("renderTokenConfig", renderTokenConfig);
-    Hooks.on("renderPrototypeTokenConfig",renderTokenConfig);
+Hooks.on("renderTokenConfig", renderTokenConfig);
+Hooks.on("renderPrototypeTokenConfig",renderTokenConfig);

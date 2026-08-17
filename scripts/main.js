@@ -7,15 +7,17 @@ import "./app/PatrolRegionBehavior.js";
 import "../style/module.scss";
 
 export const MODULE_ID = "patrol";
+export let patrolApp;
 
 Hooks.on("init", () => {
     registerSettings();
 });
 
 Hooks.on("ready", () => {
-    Patrol.init();
-    window.patrolApp = new PatrolApp();
-    window.patrolApp.render({ force: true });
+    if (!game.user.isGM) return;
+    const API = {};
+    game.modules.get(MODULE_ID).API = API;
+    patrolApp = new PatrolApp();
 });
 
 setupHooks();
