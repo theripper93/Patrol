@@ -72,7 +72,12 @@ export class Patrol {
 
     static async stepAllTokens(backward) {
         for (const token of canvas.tokens.placeables) {
-            Patrol.stepToken(token, backward);
+            if (Patrol.tokensStepTask) {
+                const randomDelay = Math.random() * getSetting("minStepDelay");
+                setTimeout(() => Patrol.stepToken(token, backward), randomDelay);
+            } else {
+                Patrol.stepToken(token, backward);
+            }
         }
     }
 
