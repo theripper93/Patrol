@@ -1,12 +1,12 @@
 {
     "patrol": {
         "patrol-app": {
-            "title": "Patrol",
+            "title": "Patrol Panel",
             "selectAll": "Step All",
             "selectSingle": "Step Selected",
             "stepBackward": "Step Backward",
             "stepForward": "Step Forward",
-            "toggleStepping": "Toggle Stepping"
+            "toggleStepping": "Toggle Patrol"
         },
         "settings": {
             "tokensOpenDoors": {
@@ -28,11 +28,16 @@
             "patrolAlert": {
                 "name": "Alerted Sound",
                 "hint": "Sound to play when an enemy is alerted by a PC"
+            },
+            "openApplication": {
+                "name": "Patrol Panel",
+                "hint": "Open the Patrol Panel. You can also use the button in the Actor Directory or the 'ui.patrolApp.render({ force: true })' macro command.",
+                "label": "Open Stage Master"
             }
         },
         "tokenConfig": {
             "enablePatrol": {
-                "name": "Enable Random Patrol"
+                "name": "Enable Patrol"
             },
             "enableSpotting": {
                 "name": "Spot Player Characters",
@@ -46,7 +51,7 @@
         },
         "tools": {
             "patrolToggle": {
-                "app": "Toggle Patrol App",
+                "app": "Toggle Patrol Panel",
                 "stepping": "Toggle Token Patrol"
             }
         }

@@ -18,6 +18,7 @@ Hooks.on("ready", () => {
     const API = {};
     game.modules.get(MODULE_ID).API = API;
     patrolApp = new PatrolApp();
+    ui.patrolApp = patrolApp;
 });
 
 setupHooks();

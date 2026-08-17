@@ -1,4 +1,5 @@
 import { MODULE_ID } from "./main.js";
+import { PatrolApp } from "./app/PatrolApp.js";
 
 const SETTING_CACHE = {};
 const DEFAULT_CACHE = true;
@@ -40,6 +41,15 @@ export function registerSettings() {
     };
 
     registerSettingsArray(settings);
+    
+    game.settings.registerMenu(MODULE_ID, "patrol", {
+        name: game.i18n.localize(`${MODULE_ID}.settings.openApplication.name`),
+        label: game.i18n.localize(`${MODULE_ID}.settings.openApplication.label`),
+        hint: game.i18n.localize(`${MODULE_ID}.settings.openApplication.hint`),
+        icon: "fad fa-walking",
+        type: PatrolApp,
+        config: true,
+    });
 }
 
 export function getSetting(key) {

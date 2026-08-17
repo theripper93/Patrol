@@ -24,7 +24,6 @@ export class PatrolApp extends HandlebarsApplication {
                 width: "auto"
             }
         });
-
     }
 
     static get PARTS() {
@@ -46,6 +45,8 @@ export class PatrolApp extends HandlebarsApplication {
     async _onRender(context, options) {
         await super._onRender(context, options);
         const html = this.element;
+        ui.controls.controls.tokens.tools.patrolToggle.pip = true;
+        ui.controls.render();
     }
 
     static async selectSingle() {
@@ -80,8 +81,8 @@ export class PatrolApp extends HandlebarsApplication {
         this.render();
     }
 
-    toggle(toggle) {
-        if (!toggle) {
+    toggle() {
+        if (this.rendered) {
             this.close();
         } else {
             this.render({ force: true });
@@ -92,7 +93,7 @@ export class PatrolApp extends HandlebarsApplication {
     async _onClose() {
         Patrol.updateGraphics(false);
         await super._onClose();
-        ui.controls.controls.tokens.tools.patrolToggle.active = false;
+        ui.controls.controls.tokens.tools.patrolToggle.pip = false;
         ui.controls.render();
     }
 }

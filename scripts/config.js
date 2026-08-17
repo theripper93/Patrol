@@ -16,26 +16,38 @@ export function setupHooks() {
                 name: "patrolToggle",
                 title: `<div class="toolclip">
                     <p>
-                        <span class="reference">Left-Click</span>
-                        <strong>: ${game.i18n.localize(`${MODULE_ID}.tools.patrolToggle.app`)}</strong>
-                    </p>
-                    <p>
-                        <span class="reference">CTRL + Left-Click</span>
+                        <span class="reference">Left Click</span>
                         <strong>: ${game.i18n.localize(`${MODULE_ID}.tools.patrolToggle.stepping`)}</strong>
+                        </p>
+                        <p>
+                        <span class="reference">Alt + Left Click</span>
+                        <strong>: ${game.i18n.localize(`${MODULE_ID}.tools.patrolToggle.app`)}</strong>
                     </p>
                 </div>`,
                 onChange: (event, toggle) => {
                     if (event.altKey) {
+                        patrolApp.toggle();
                         ui.controls.controls.tokens.tools.patrolToggle.active = !toggle;
-                        Patrol.toggleStepping(!Patrol.stepping);
-                        patrolApp.render();
+                        ui.controls.render();
                         return;
                     }
-                    patrolApp.toggle(toggle);
+                    Patrol.toggleStepping(!Patrol.stepping);
+                    patrolApp.render();
                 },
             };
         }
     });
+
+    Hooks.on("renderActorDirectory", (app, html) => {
+        if (!game.user.isGM) return;
+
+        const buttonContainer = html.querySelector(".header-actions.action-buttons");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.innerHTML = `<i class="fad fa-walking"></i><span>${game.i18n.localize(`${MODULE_ID}.patrol-app.title`)}</span>`;
+        button.onclick = () => ui.patrolApp?.render({ force: true });
+        buttonContainer.appendChild(button);
+    })
 
     Hooks.on("ready", () => {
         CONFIG.statusEffects["patrolundetectable"] = {

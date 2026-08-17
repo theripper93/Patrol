@@ -17,8 +17,6 @@ export class Patrol {
         this.#stepping = value;
     }
 
-    static init() {}
-
     static getToken(tokenId) {
         return this.#tokens.get(tokenId);
     }
@@ -47,7 +45,7 @@ export class Patrol {
                 Patrol.tokensStepTask = false;
             }
         }
-        ui.controls.controls.tokens.tools.patrolToggle.pip = toggle;
+        ui.controls.controls.tokens.tools.patrolToggle.active = toggle;
         ui.controls.render();
     }
 
