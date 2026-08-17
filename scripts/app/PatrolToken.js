@@ -91,7 +91,7 @@ export class PatrolToken {
 
     isLinearPath() {
         if (!this.region) return false;
-        return this.region.behaviors?.contents?.find(b => b.type === "patrol.patrol")?.system?.linearPath;
+        return this.region.behaviors?.contents?.find(b => b.type === "patrol.patrolArea")?.system?.linearPath;
     }
 
     containsToken(set) {
@@ -115,7 +115,7 @@ export class PatrolToken {
         const maxDistance = Math.hypot(canvas.dimensions.width, canvas.dimensions.height);
         const allowed = [];
         for (const region of regions) {
-            const behavior = region.behaviors.contents.find(b => b.type === "patrol.patrol");
+            const behavior = region.behaviors.contents.find(b => b.type === "patrol.patrolArea");
             if (!behavior) continue;
             if (behavior.disabled) continue;
 

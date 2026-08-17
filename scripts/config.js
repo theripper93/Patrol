@@ -23,15 +23,8 @@ const renderTokenConfig = (app, html, data) => {
                 <label>${game.i18n.localize("patrol.tokenConfig.enableSpotting.name")}</label>
                 <input type="checkbox" name="flags.${MODULE_ID}.enableSpotting" data-dtype="Boolean" ${token.getFlag(MODULE_ID, "enableSpotting") ? "checked" : ""}>
             </div>
-            <div class="form-group">
-                <label>${game.i18n.localize("patrol.tokenConfig.makePatroller.name")}</label>
-                <input type="checkbox" name="flags.${MODULE_ID}.makePatroller" data-dtype="Boolean" ${token.getFlag(MODULE_ID, "makePatroller") ? "checked" : ""}>
-            </div>
         </fieldset>
     `;
-
-    // <label>${game.i18n.localize("patrol.tokenConfig.multiPath.name")}</label>
-    // <input type="checkbox" name="flags.${MODULE_ID}.multiPath" data-dtype="Boolean" ${token.getFlag(MODULE_ID, "multiPath") ? "checked" : ""}>
             
     const lockRotationInput = html.querySelector("input[name='lockRotation']");
     const formGroup = lockRotationInput.closest(".form-group");
