@@ -27,6 +27,10 @@ export class Patrol {
         this.#tokens.clear();
     }
 
+    static clearWallCache() {
+        this.wallCache.clear();
+    }
+
     static async toggleStepping(toggle) {
         this.#stepping = toggle;
         if (toggle) {

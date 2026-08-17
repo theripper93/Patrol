@@ -376,34 +376,38 @@ export class PatrolToken {
         const polygon = this.region.polygons[0];
         const points = polygon.points;
         const tokenOffset = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
-        const regionVertices = [tokenOffset];
-        // let tokenInPath = false;
+        const regionVertices = [];
+
+        // Take polygon points
+        let tokenInRegion = false;
         for (let i = 0; i < points.length; i += 2) {
             const cell = canvas.grid.getOffset({ x: points[i], y: points[i + 1] });
             regionVertices.push(cell);
-            // if (cell.i === tokenOffset.i && cell.j === tokenOffset.j) tokenInPath = true;
+            if (cell.i === tokenOffset.i && cell.j === tokenOffset.j) tokenInRegion = true;
         }
-        // if (!tokenInPath) regionVertices.unshift(tokenOffset);
 
+        // Add token position if not in polygon
         const regionBoundaryCells = [];
-        for (let i = 0; i < regionVertices.length - 1; i++) {
-            const currentCell = regionVertices[i];
-            const nextCell = regionVertices[i + 1];
+        if (!tokenInRegion) {
+            const path = this.#getPathFromTo([], tokenOffset, regionVertices[0], true);
+            if (path.length > 0) regionBoundaryCells.push(...path);
+        }
 
-            const path = this.#getPathFromTo([], currentCell, nextCell, true);
+        // Add all other vertices
+        for (let i = 0; i < regionVertices.length - 1; i++) {
+            const path = this.#getPathFromTo([], regionVertices[i], regionVertices[i + 1], true);
             if (path.length > 0) {
+                if (path.length > 1) path.pop();
                 regionBoundaryCells.push(...path);
             }
         }
-        const currentCell = regionVertices[regionVertices.length - 1];
-        const nextCell = regionVertices[0];
 
-        const path = this.#getPathFromTo([], currentCell, nextCell, true);
+        // Close the polygon
+        const path = this.#getPathFromTo([], regionVertices[regionVertices.length - 1], regionVertices[0], true);
         if (path.length > 0) {
+            if (path.length > 1) path.pop();
             regionBoundaryCells.push(...path);
         }
-
-        console.log(regionBoundaryCells);
 
         return regionBoundaryCells;
     }

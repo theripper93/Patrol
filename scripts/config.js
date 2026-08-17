@@ -1,7 +1,10 @@
 import { MODULE_ID } from "./main.js";
+import { Patrol } from "./app/Patrol.js";
 
 export function setupHooks() {
-    
+    const onWallEdit = async (wall, update) => Patrol.clearWallCache();
+    Hooks.on("drawWall", onWallEdit);
+    Hooks.on("controlWall", onWallEdit);
 }
 
 const renderTokenConfig = (app, html, data) => {
