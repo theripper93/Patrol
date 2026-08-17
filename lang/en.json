@@ -37,6 +37,10 @@
             "minStepDelay": {
                 "name": "Minimum Step Delay",
                 "hint": "Minimum delay between steps in milliseconds. Actual time between movements will be dependant on Foundry's Token updates and Token movement on the map. Lower values can be resource intensive."
+            },
+            "hidePatrolButtonInSidebar": {
+                "name": "Hide Patrol Panel button in Sidebar",
+                "hint": "Hide the Patrol Panel button in the Actor Directory sidebar. You can still use the 'ui.patrolApp.render({ force: true })' macro command or Alt+LClick on the Patrol button in Token Scene Controls."
             }
         },
         "tokenConfig": {

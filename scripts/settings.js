@@ -44,6 +44,13 @@ export function registerSettings() {
             min: 100,
             scope: "world",
             config: true,
+        },
+        hidePatrolButtonInSidebar: {
+            type: Boolean,
+            default: false,
+            scope: "world",
+            config: true,
+            requiresReload: true,
         }
     };
 

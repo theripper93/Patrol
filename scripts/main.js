@@ -13,6 +13,10 @@ Hooks.on("init", () => {
     registerSettings();
 });
 
+Hooks.on("setup", () => {
+    setupHooks();
+});
+
 Hooks.on("ready", () => {
     if (!game.user.isGM) return;
     const API = {};
@@ -20,5 +24,3 @@ Hooks.on("ready", () => {
     patrolApp = new PatrolApp();
     ui.patrolApp = patrolApp;
 });
-
-setupHooks();

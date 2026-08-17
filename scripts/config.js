@@ -1,4 +1,5 @@
 import { MODULE_ID, patrolApp } from "./main.js";
+import { getSetting } from "./settings.js";
 import { Patrol } from "./app/Patrol.js";
 
 export function setupHooks() {
@@ -38,16 +39,18 @@ export function setupHooks() {
         }
     });
 
-    Hooks.on("renderActorDirectory", (app, html) => {
-        if (!game.user.isGM) return;
+    if (!getSetting("hidePatrolButtonInSidebar")) {
+        Hooks.on("renderActorDirectory", (app, html) => {
+            if (!game.user.isGM) return;
 
-        const buttonContainer = html.querySelector(".header-actions.action-buttons");
-        const button = document.createElement("button");
-        button.type = "button";
-        button.innerHTML = `<i class="fad fa-walking"></i><span>${game.i18n.localize(`${MODULE_ID}.patrol-app.title`)}</span>`;
-        button.onclick = () => ui.patrolApp?.render({ force: true });
-        buttonContainer.appendChild(button);
-    })
+            const buttonContainer = html.querySelector(".header-actions.action-buttons");
+            const button = document.createElement("button");
+            button.type = "button";
+            button.innerHTML = `<i class="fad fa-walking"></i><span>${game.i18n.localize(`${MODULE_ID}.patrol-app.title`)}</span>`;
+            button.onclick = () => ui.patrolApp?.render({ force: true });
+            buttonContainer.appendChild(button);
+        })
+    }
 
     Hooks.on("ready", () => {
         CONFIG.statusEffects["patrolundetectable"] = {
