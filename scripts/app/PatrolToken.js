@@ -202,6 +202,11 @@ export class PatrolToken {
             }
         } else if (this.state === PatrolToken.STATES.ALERTED) {
             const spotted = this.spotEnemy();
+            if (spotted === 20) {
+                this.state = PatrolToken.STATES.PATROLLING;
+                patrolAlerted({ uuid: this.token.document.uuid, type: "patrol" });
+                return;
+            }
             if (spotted === 10) {
                 this.#alerted++;
                 if (this.#alerted > getSetting("patrolMaxAlerted")) {
@@ -319,7 +324,13 @@ export class PatrolToken {
             let enemyLocation;
             let allyState;
             const pt = Patrol.getToken(enemy.id);
-            if (pt && (pt.state !== PatrolToken.STATES.PATROLLING) && pt.enemyLocation) {
+            if (pt && (pt.token.id === this.following) && (pt.state === PatrolToken.STATES.PATROLLING)) {
+                this.following = null;
+                this.computePath();
+                return 20;
+            }
+            if (pt && pt.enemyLocation) {
+                this.following = pt.token.id;
                 enemyLocation = pt.enemyLocation;
                 allyState = pt.state;
             }
