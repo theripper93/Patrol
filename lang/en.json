@@ -31,8 +31,8 @@
             },
             "openApplication": {
                 "name": "Patrol Panel",
-                "hint": "Open the Patrol Panel. You can also use the button in the Actor Directory or the 'ui.patrolApp.render({ force: true })' macro command.",
-                "label": "Open Stage Master"
+                "hint": "Open the Patrol Panel. You can also Alt+LClick on the Patrol button in Token Scene Controls or use the 'ui.patrolApp.render({ force: true })' macro command.",
+                "label": "Open Patrol Panel"
             }
         },
         "tokenConfig": {
