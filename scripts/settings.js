@@ -38,10 +38,17 @@ export function registerSettings() {
             scope: "world",
             config: true,
         },
+        minStepDelay: {
+            type: Number,
+            default: 200,
+            min: 100,
+            scope: "world",
+            config: true,
+        }
     };
 
     registerSettingsArray(settings);
-    
+
     game.settings.registerMenu(MODULE_ID, "patrol", {
         name: game.i18n.localize(`${MODULE_ID}.settings.openApplication.name`),
         label: game.i18n.localize(`${MODULE_ID}.settings.openApplication.label`),

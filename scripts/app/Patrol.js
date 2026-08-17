@@ -7,7 +7,6 @@ export class Patrol {
     static #stepping = false;
     static tokensStepTask = null;
     static wallCache = new Map();
-    static minInterval = 200;
 
     static get stepping() {
         return this.#stepping;
@@ -66,7 +65,7 @@ export class Patrol {
 
         // Throttle
         const elapsed = performance.now() - now;
-        if (elapsed < Patrol.minInterval) await new Promise(resolve => setTimeout(resolve, Patrol.minInterval - elapsed));
+        if (elapsed < getSetting("minStepDelay")) await new Promise(resolve => setTimeout(resolve, getSetting("minStepDelay") - elapsed));
 
         if (Patrol.tokensStepTask) Patrol.stepToken(token, backward);
     }
