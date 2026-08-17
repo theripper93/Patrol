@@ -12,16 +12,28 @@ export async function patrolAlerted({ uuid, type }) {
         config.color = "#fff200";
         config.size = 64;
         config.sound = game.settings.get(MODULE_ID, "patrolAlert");
+    } else if (type === "suspiciousByProxy") {
+        config.mark = "?";
+        config.color = "#ffa200";
+        config.size = 64;
     } else if (type === "alerted") {
         config.mark = "!";
         config.color = "#fff200";
         config.size = 64;
+    } else if (type === "alertedByProxy") {
+        config.mark = "!";
+        config.color = "#ffa200";
+        config.size = 64;
     } else if (type === "spotted") {
         config.pause = true;
         config.mark = "!";
-        config.color = "#ff0000";
+        config.color = "#cc0000";
         config.size = 128;
         config.sound = game.settings.get(MODULE_ID, "patrolSound");
+    } else if (type === "patrol") {
+        config.mark = "~";
+        config.color = "#00cc00";
+        config.size = 64;
     }
 
     if (config.pause) {
