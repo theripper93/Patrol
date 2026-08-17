@@ -50,7 +50,6 @@ export class PatrolToken {
             throw new Error(`Invalid state: ${newState}`);
         }
         if (previousState === newState) return;
-        if (game.user.isGM) console.log(`PatrolToken ${this.token.name} state changed from ${Object.keys(PatrolToken.STATES)[previousState]} to ${Object.keys(PatrolToken.STATES)[newState]}`); // REMOVE
         
         this.#state = newState;
         this.resetStateCounters();
@@ -91,9 +90,9 @@ export class PatrolToken {
 
     // --- region selection ---
 
-    isLinearPath() {
+    isEdgeRegion() {
         if (!this.region) return false;
-        return this.region.behaviors?.contents?.find(b => b.type === "patrol.patrolArea")?.system?.linearPath;
+        return this.region.behaviors?.contents?.find(b => b.type === "patrol.patrolArea")?.system?.type === "edge";
     }
 
     containsToken(set) {
@@ -206,7 +205,7 @@ export class PatrolToken {
             } else {
                 if (this.#step >= this.#path.length - 1) {
                     patrolAlerted({ uuid: this.token.document.uuid, type: "suspicious" });
-                    this.#suspicious = 0;
+                    this.resetStateCounters();
                     this.state = PatrolToken.STATES.SUSPICIOUS;
                     return;
                 }
@@ -348,7 +347,7 @@ export class PatrolToken {
 
         let path;
         const start = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
-        if (this.isLinearPath() && !specificDestination) {
+        if (this.isEdgeRegion() && !specificDestination) {
             path = this.computeClosePath();
         } else {
             const { destination, validCells } = specificDestination ? {

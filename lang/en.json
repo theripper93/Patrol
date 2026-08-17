@@ -35,7 +35,8 @@
                 "name": "Enable Random Patrol"
             },
             "enableSpotting": {
-                "name": "Spot Player Characters"
+                "name": "Spot Player Characters",
+                "hint": "Having multiple spotting tokens can be resource intensive. Handle with care."
             }
         },
         "statusEffects": {
@@ -56,7 +57,14 @@
                 "patrolArea": "Patrol Area",
                 "whitelist": "Whitelist",
                 "blacklist": "Blacklist",
-                "linearPath": "Linear Path"
+                "type": {
+                    "label": "Type",
+                    "hint": "Choose if tokens will patrol the area or guard its edges",
+                    "choices": {
+                        "area": "Area",
+                        "edge": "Edge"
+                    }
+                }
             }
         }
     }

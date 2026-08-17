@@ -61,6 +61,7 @@ const renderTokenConfig = (app, html, data) => {
             <div class="form-group">
                 <label>${game.i18n.localize("patrol.tokenConfig.enableSpotting.name")}</label>
                 <input type="checkbox" name="flags.${MODULE_ID}.enableSpotting" data-dtype="Boolean" ${token.getFlag(MODULE_ID, "enableSpotting") ? "checked" : ""}>
+                <p class="hint">${game.i18n.localize("patrol.tokenConfig.enableSpotting.hint")}</p>
             </div>
         </fieldset>
     `;
