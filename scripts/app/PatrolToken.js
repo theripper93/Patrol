@@ -392,13 +392,18 @@ export class PatrolToken {
         let tokenInRegion = false;
         const regionBoundaryCells = [];
         for (let i = 0; i < regionVertices.length - 1; i++) {
-            const path = this.#getPathFromTo([], regionVertices[i], regionVertices[i + 1], true);
-            if (path.length > 0) {
-                if (path.length > 1) path.pop();
-                for (const cell of path) {
-                    if (cell.i === tokenOffset.i && cell.j === tokenOffset.j) tokenInRegion = true;
-                    regionBoundaryCells.push(cell);
+            let path = this.#getPathFromTo([], regionVertices[i], regionVertices[i + 1], true);
+            if (path.length === 0) {
+                for (let j = i + 1; j < regionVertices.length - 1; j++) {
+                    path = this.#getPathFromTo([], regionVertices[i], regionVertices[j], true);
+                    if (path.length > 1) break;
                 }
+            }
+            if (path.length < 2) continue;
+            path.pop();
+            for (const cell of path) {
+                if (cell.i === tokenOffset.i && cell.j === tokenOffset.j) tokenInRegion = true;
+                regionBoundaryCells.push(cell);
             }
         }
         
