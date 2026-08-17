@@ -2,7 +2,7 @@ import { MODULE_ID } from "../main.js";
 import { canTokenSeeToken } from "../lib/utils.js";
 import { getSetting } from "../settings.js";
 import { Patrol } from "./Patrol.js";
-import { patrolAlerted, patrolSpotted } from "../helpers.js";
+import { patrolAlerted } from "../helpers.js";
 
 const MAX_LOITER = 5;
 const MAX_SUSPICIOUS = 5;
@@ -16,6 +16,7 @@ export class PatrolToken {
     #loiter = 0;
     #retreat = 0;
     #suspicious = 0;
+    #rotations = [0, 45, 90, 135, 180, 225, 270, 315];
     #alerted = 0;
     #retreating = false;
     #graphic;
@@ -173,21 +174,21 @@ export class PatrolToken {
         if (this.state === PatrolToken.STATES.PATROLLING) {
             const spotted = this.spotEnemy();
             if (spotted) {
-                patrolAlerted({ uuid: this.token.document.uuid });
+                patrolAlerted({ uuid: this.token.document.uuid, type: "suspicious" });
                 this.state = PatrolToken.STATES.SUSPICIOUS;
                 return;
             }
         } else if (this.state === PatrolToken.STATES.SUSPICIOUS) {
             this.#suspicious++;
-            if (this.#suspicious < MAX_SUSPICIOUS) {
-                const rotations = [0, 90, 180, 270];
-                const rotation = rotations[Math.floor(Math.random() * rotations.length)];
+            if (this.#suspicious < getSetting("patrolMaxSuspicious")) {
+                if (this.#rotations.length === 0) this.#rotations = [0, 45, 90, 135, 180, 225, 270, 315];
+                const rotation = this.#rotations.splice(Math.floor(Math.random() * this.#rotations.length), 1)[0];
                 this.token.document.update({ rotation });
                 return;
             }
             const spotted = this.spotEnemy();
             if (spotted) {
-                patrolSpotted({ uuid: this.token.document.uuid });
+                patrolAlerted({ uuid: this.token.document.uuid, type: "alerted" });
                 this.state = PatrolToken.STATES.ALERTED;
             } else {
                 this.state = PatrolToken.STATES.PATROLLING;
@@ -196,15 +197,15 @@ export class PatrolToken {
             const spotted = this.spotEnemy();
             if (spotted) {
                 this.#alerted++;
-                if (this.#alerted > MAX_ALERTED) {
-                    patrolSpotted({ uuid: this.token.document.uuid, pizzed: true });
+                if (this.#alerted > getSetting("patrolMaxAlerted")) {
+                    patrolAlerted({ uuid: this.token.document.uuid, type: "spotted" });
                     // ui.notifications.warn(`Patrol | ${this.token.name} has spotted somebody!`);
                     this.state = PatrolToken.STATES.PATROLLING;
                     return;
                 }
             } else {
                 if (this.#step >= this.#path.length) {
-                    patrolAlerted({ uuid: this.token.document.uuid });
+                    patrolAlerted({ uuid: this.token.document.uuid, type: "suspicious" });
                     this.state = PatrolToken.STATES.SUSPICIOUS;
                     return;
                 }
@@ -328,6 +329,7 @@ export class PatrolToken {
         this.setNextRegion();
 
         let path;
+        const start = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
         if (this.isLinearPath() && !specificDestination) {
             path = this.computeClosePath();
         } else {
@@ -336,7 +338,13 @@ export class PatrolToken {
                 validCells: []
             } : this.#getNextDestination();
             
-            const start = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
+            path = this.#getPathFromTo(validCells, start, destination, !!specificDestination || !this.region);
+        }
+
+        // In case region is not reachable
+        if (path.length < 2) {
+            this.region = null;
+            const { destination, validCells } = this.#getNextDestination();
             path = this.#getPathFromTo(validCells, start, destination, !!specificDestination || !this.region);
         }
 
@@ -394,7 +402,8 @@ export class PatrolToken {
         // Add token position if not in polygon
         if (!tokenInRegion) {
             const path = this.#getPathFromTo([], tokenOffset, regionVertices[0], true);
-            if (path.length > 0) regionBoundaryCells.unshift(...path);
+            if (path.length < 2) return [tokenOffset];
+            regionBoundaryCells.unshift(...path);
         }
 
         // Close the polygon

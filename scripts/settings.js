@@ -9,25 +9,33 @@ export function registerSettings() {
             type: Boolean,
             default: true,
             scope: "world",
-            config: false
+            config: true
         },
-        patrolAlertDelay: {
+        patrolMaxSuspicious: {
             type: Number,
-            default: 3000,
+            default: 5,
             scope: "world",
-            config: false
+            config: true,
+        },
+        patrolMaxAlerted: {
+            type: Number,
+            default: 5,
+            scope: "world",
+            config: true,
         },
         patrolSound: {
             type: String,
             default: "",
             filePicker: true,
             scope: "world",
+            config: true,
         },
         patrolAlert: {
             type: String,
             default: "",
             filePicker: true,
             scope: "world",
+            config: true,
         }
     };
 

@@ -58,7 +58,7 @@ export class Patrol {
             return;
         }
         const now = performance.now();
-        await pt.step(backward);
+        if (!game.paused) await pt.step(backward);
 
         // Throttle
         const elapsed = performance.now() - now;

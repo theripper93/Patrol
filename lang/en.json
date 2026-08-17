@@ -10,8 +10,24 @@
         },
         "settings": {
             "tokensOpenDoors": {
-                "label": "Open Doors",
+                "name": "Open Doors",
                 "hint": "Tokens can open doors when moving through them"
+            },
+            "patrolMaxSuspicious": {
+                "name": "Max Suspicious Steps",
+                "hint": "Number of steps a token looks around before trying to chase a PC"
+            },
+            "patrolMaxAlerted": {
+                "name": "Max Alerted Steps",
+                "hint": "Number of steps a token must have line of sight on a chased PC before actually spotting it"
+            },
+            "patrolSound": {
+                "name": "Spotted Sound",
+                "hint": "Sound to play when a PC is spotted by an enemy"
+            },
+            "patrolAlert": {
+                "name": "Alerted Sound",
+                "hint": "Sound to play when an enemy is alerted by a PC"
             }
         },
         "tokenConfig": {
