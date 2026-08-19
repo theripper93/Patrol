@@ -19,7 +19,9 @@ Hooks.on("setup", () => {
 
 Hooks.on("ready", () => {
     if (!game.user.isGM) return;
-    const API = {};
+    const API = {
+        patrol: Patrol
+    };
     game.modules.get(MODULE_ID).API = API;
     patrolApp = new PatrolApp();
     ui.patrolApp = patrolApp;
