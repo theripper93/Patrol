@@ -63,7 +63,7 @@ export class PatrolMigration {
         return migratedCount;
     }
 
-    static async migrateShape(drawing) {
+    static migrateShape(drawing) {
         const { x, y, shape, rotation } = drawing;
         const { type, width, height } = shape;
         switch ( type ) {
