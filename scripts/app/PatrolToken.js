@@ -467,6 +467,9 @@ export class PatrolToken {
 
         let insideRegion = this.region?.polygonTree.testPoint(this.token.center);
 
+        let processed = 0;
+        const maxCells = 10000;
+
         const startKey = `${startOffset.i},${startOffset.j}`;
         visited.add(startKey);
 
@@ -475,16 +478,18 @@ export class PatrolToken {
             cells.push({i: cell.i, j: cell.j});
             if (insideRegion) cellsInsideRegion.push({i: cell.i, j: cell.j});
 
+            if (!this.region && (processed++ >= maxCells)) break;
+
             for (const neighbor of Patrol.getAdjacentOffsets(cell, { diagonals: false })) {
                 const key = `${neighbor.i},${neighbor.j}`;
                 if (visited.has(key)) continue;
-
+                
                 // Must not be blocked by a wall
                 if (Patrol.wallBetween(cell, neighbor).blocked) continue;
                 
                 // Must have enough space for the token to fit
-                if (!this.#tokenFits(neighbor, !this.region)) continue;
-
+                if (!this.#tokenFits(neighbor)) continue;
+                
                 if (this.region) {
                     // Must be inside the region polygon
                     const center = canvas.grid.getCenterPoint(neighbor);
@@ -514,7 +519,7 @@ export class PatrolToken {
         }
     }
 
-    #tokenFits(cell, ignoreBoundaries = false) {
+    #tokenFits(cell) {
         const height = this.token.document.height;
         const width = this.token.document.width;
 
@@ -523,9 +528,6 @@ export class PatrolToken {
         for (let i = 0; i < height; i++) {
             for (let j = 0; j < width; j++) {
                 const subcell = { i: cell.i + i, j: cell.j + j };
-                if (!ignoreBoundaries) {
-                    if (this.region && !this.region.polygonTree.testPoint(canvas.grid.getCenterPoint(subcell))) return false;
-                }
                 if (j < width - 1 && Patrol.wallBetween(subcell, { i: subcell.i, j: subcell.j + 1 }).blocked) return false;
                 if (i < height - 1 && Patrol.wallBetween(subcell, { i: subcell.i + 1, j: subcell.j }).blocked) return false;
             }
@@ -558,7 +560,7 @@ export class PatrolToken {
                 if (!ignoreBoundaries && !cellSet.has(nk)) continue;
                 const wall = Patrol.wallBetween(current, nb);
                 if (wall.blocked) continue;
-                if (!this.#tokenFits(nb, ignoreBoundaries)) continue;
+                if (!this.#tokenFits(nb)) continue;
 
                 visited.add(nk);
                 parent.set(nk, {i: current.i, j: current.j, door: wall.door });
@@ -581,7 +583,6 @@ export class PatrolToken {
             if (iterations > 100000) break;
         }
 
-        // path.pop(); // Remove the starting point, as the token is already there
         return path.reverse();
     }
 }
