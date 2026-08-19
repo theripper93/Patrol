@@ -2,6 +2,7 @@ import { setupHooks } from "./config.js";
 import { Patrol } from "./app/Patrol.js";
 import { PatrolApp } from "./app/PatrolApp.js";
 import { registerSettings } from "./settings.js";
+import { PatrolMigration } from "./PatrolMigration.js";
 import "./app/PatrolRegionBehavior.js";
 
 import "../style/module.scss";
@@ -26,3 +27,9 @@ Hooks.on("ready", () => {
     patrolApp = new PatrolApp();
     ui.patrolApp = patrolApp;
 });
+
+Hooks.once("ready", () => {
+    if (game.user.isGM && game.settings.get(MODULE_ID, "migrateOnStartupDialog")) {
+        PatrolMigration.showManualMigrationDialog();
+    }
+})

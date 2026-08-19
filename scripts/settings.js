@@ -51,7 +51,13 @@ export function registerSettings() {
             scope: "world",
             config: true,
             requiresReload: true,
-        }
+        },
+        migrateOnStartupDialog: {
+            type: Boolean,
+            default: true,
+            scope: "world",
+            config: true,
+        },
     };
 
     registerSettingsArray(settings);

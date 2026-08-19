@@ -41,6 +41,10 @@
             "hidePatrolButtonInSidebar": {
                 "name": "Hide Patrol Panel button in Sidebar",
                 "hint": "Hide the Patrol Panel button in the Actor Directory sidebar. You can still use the 'ui.patrolApp.render({ force: true })' macro command or Alt+LClick on the Patrol button in Token Scene Controls."
+            },
+            "migrateOnStartupDialog": {
+                "name": "Open migration dialog on startup",
+                "hint": "If enabled, the module will open a dialog to migrate the data from the V13 data structure to the V14 one on startup."
             }
         },
         "tokenConfig": {
