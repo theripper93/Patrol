@@ -1,0 +1,1 @@
+{"version":3,"file":"styles/module.css","mappings":";;;AACI;EACI;AAAR;AAEQ;EACI;AAAZ,C","sources":["webpack:///./style/module.scss"],"sourcesContent":["#patrol-app {\n    .window-content.standard-form {\n        padding: 0.3rem;\n\n        fieldset {\n            padding: 0.5rem;\n        }\n    }\n}"],"names":[],"sourceRoot":""}

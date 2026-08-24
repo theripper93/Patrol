@@ -19,16 +19,19 @@
       "lang": "en",
       "name": "English",
       "path": "lang/en.json"
-    },
-    {
-      "lang": "es",
-      "name": "Español",
-      "path": "lang/es.json"
     }
   ],
   "esmodules": [
-    "scripts/main.js"
+    "index.js"
   ],
+  "styles": [
+    "styles/module.css"
+  ],
+  "documentTypes": {
+    "RegionBehavior": {
+      "patrolArea": {}
+    }
+  },
   "socket": true,
   "url": "https://github.com/theripper93/Patrol",
   "manifest": "https://github.com/theripper93/Patrol/releases/latest/download/module.json",
