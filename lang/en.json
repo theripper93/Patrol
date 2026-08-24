@@ -7,7 +7,7 @@
             "stepBackward": "Step Backward",
             "stepForward": "Step Forward",
             "toggleStepping": "Toggle Patrol",
-            "toggleSteppingDisabled": "Auto Patrol is disabled in combat"
+            "toggleSteppingDisabled": "Auto Patrol is disabled in Combat and while stepping single Tokens"
         },
         "settings": {
             "patrolMaxSuspicious": {

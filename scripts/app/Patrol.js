@@ -69,8 +69,8 @@ export class Patrol {
         
         let canStep = true;
         if (game.paused) canStep = false;
-        if (token === _token) canStep = false;
-        if (!canStep) await pt.step(backward);
+        if (token.document.controlled) canStep = false;
+        if (canStep) await pt.step(backward);
 
         // Throttle
         const elapsed = performance.now() - now;

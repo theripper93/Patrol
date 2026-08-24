@@ -56,7 +56,7 @@ export function setupHooks() {
         CONFIG.statusEffects["patrolundetectable"] = {
             id: "patrolundetectable",
             name: game.i18n.localize(`${MODULE_ID}.statusEffects.patrolundetectable.name`),
-            icon: "icons/svg/eye.svg",
+            img: "icons/svg/eye.svg",
         };
     });
 }

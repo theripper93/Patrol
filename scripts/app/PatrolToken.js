@@ -191,7 +191,7 @@ export class PatrolToken {
 
     updateState() {
         if (this.state === PatrolToken.STATES.PATROLLING) {
-            const spotted = this.spotEnemy();
+            const spotted = this.spotEnemy({ aboutToSuspect: true });
             if (spotted) {
                 patrolAlerted({ uuid: this.token.document.uuid, type: spotted === 10 ? "suspicious" : "suspiciousByProxy" });
                 this.state = PatrolToken.STATES.SUSPICIOUS;
@@ -205,7 +205,7 @@ export class PatrolToken {
                 this.token.document.update({ rotation });
                 return;
             }
-            const spotted = this.spotEnemy();
+            const spotted = this.spotEnemy({ aboutToAlert: true });
             if ((spotted === 10) || (spotted === PatrolToken.STATES.ALERTED)) {
                 patrolAlerted({ uuid: this.token.document.uuid, type: spotted === 10 ? "alerted" : "alertedByProxy" });
                 this.state = PatrolToken.STATES.ALERTED;
@@ -214,7 +214,9 @@ export class PatrolToken {
                 this.state = PatrolToken.STATES.PATROLLING;
             }
         } else if (this.state === PatrolToken.STATES.ALERTED) {
-            const spotted = this.spotEnemy();
+            const patrolMaxAlerted = getSetting("patrolMaxAlerted");
+            const aboutToSpot = this.#alerted === patrolMaxAlerted;
+            const spotted = this.spotEnemy({ aboutToSpot });
             if (spotted === 20) {
                 this.state = PatrolToken.STATES.PATROLLING;
                 patrolAlerted({ uuid: this.token.document.uuid, type: "patrol" });
@@ -222,7 +224,7 @@ export class PatrolToken {
             }
             if (spotted === 10) {
                 this.#alerted++;
-                if (this.#alerted > getSetting("patrolMaxAlerted")) {
+                if (this.#alerted > patrolMaxAlerted) {
                     patrolAlerted({ uuid: this.token.document.uuid, type: "spotted" });
                     this.state = PatrolToken.STATES.PATROLLING;
                     return;
@@ -365,7 +367,7 @@ export class PatrolToken {
 
     // --- pathfinding ---
 
-    spotEnemy() {
+    spotEnemy(state) {
         if (!this.token.document.flags[MODULE_ID]?.enableSpotting) return 0;
 
         const visionSource = new CONFIG.Canvas.visionSourceClass({object: this.token});
@@ -393,6 +395,17 @@ export class PatrolToken {
             if (!spotted) continue;
 
             if (enemy.document.hasStatusEffect("patrolundetectable")) continue;
+
+            if (state.aboutToSuspect) {
+                if (!Hooks.call("prePatrolSuspicious", this.token, enemy)) continue;
+                Hooks.call("patrolSuspicious", this.token, enemy);
+            } else if (state.aboutToAlert) {
+                if (!Hooks.call("prePatrolAlerted", this.token, enemy)) continue;
+                Hooks.call("patrolAlerted", this.token, enemy);
+            } else if (state.aboutToSpot) {
+                if (!Hooks.call("prePatrolSpotted", this.token, enemy)) continue;
+                Hooks.call("patrolSpotted", this.token, enemy);
+            }
 
             const enemyOffset = canvas.grid.getOffset(enemyLocation ? enemyLocation : enemy.center);
             this.computePath(enemyOffset);

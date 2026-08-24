@@ -39,7 +39,7 @@ export class PatrolApp extends HandlebarsApplication {
         const context = await super._prepareContext(options);
         context.stepping = Patrol.stepping;
         context.allTokens = this.#allTokens;
-        context.autoDisabled = game.combat?.started || this.#allTokens;
+        context.autoDisabled = game.combat?.started || !this.#allTokens;
         return context;
     }
 
