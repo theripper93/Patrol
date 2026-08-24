@@ -286,7 +286,6 @@ export class PatrolToken {
                 if (nextOccupiedCell && Math.random() > CHANCE_TO_SWAP && this.token.bounds.contains(nextOccupiedCell.x, nextOccupiedCell.y)) occupied = null;
             }
 
-
             if (occupied) {
                 if (Math.random() < CHANCE_TO_LOITER) {
                     if (this.#loiter > MAX_LOITER) {
