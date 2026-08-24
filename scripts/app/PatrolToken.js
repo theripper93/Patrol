@@ -93,11 +93,15 @@ export class PatrolToken {
         return this.#path;
     }
 
+    get regionBehavior() {
+        return this.region?.behaviors?.contents?.find(b => b.type === "patrol.patrolArea")?.system;
+    }
+
     // --- region selection ---
 
     isEdgeRegion() {
         if (!this.region) return false;
-        return this.region.behaviors?.contents?.find(b => b.type === "patrol.patrolArea")?.system?.type === "edge";
+        return this.regionBehavior?.type === "edge";
     }
 
     containsToken(set) {
@@ -302,21 +306,62 @@ export class PatrolToken {
 
         this.#step = step;
 
-        if (this.#lastDoor && this.#lastDoor.isOpen && getSetting("tokensOpenDoors")) {
-            const chanceToCloseDoor = Math.random() < 0.5;
-            if (chanceToCloseDoor) this.#lastDoor.update({ ds: CONST.WALL_DOOR_STATES.CLOSED });
-            this.#lastDoor = null;
+        let doorBehavior = this.token.document.getFlag(MODULE_ID, "doorBehavior") ?? ["useRegionSettings"];
+        let leaveDoorOpenChance = this.token.document.getFlag(MODULE_ID, "leaveDoorOpen") ?? 0;
+        if (doorBehavior.includes("useRegionSettings") && this.region) {
+            doorBehavior = this.regionBehavior.doorBehavior;
+            leaveDoorOpenChance = this.regionBehavior.leaveDoorOpen;
         }
 
-        if (next.door) {
-            if (getSetting("tokensOpenDoors")) {
-                if (!next.door.isOpen) next.door.update({ ds: CONST.WALL_DOOR_STATES.OPEN });
-                this.#lastDoor = next.door;
+        const canPassDoor = this.canPassDoor(next.door);
+        
+        if (canPassDoor) {
+            // Closes door just traversed
+            if (this.#lastDoor && this.#lastDoor.isOpen) {
+                const chanceToCloseDoor = Math.random() > (this.leaveDoorOpenChance / 100);
+                if (chanceToCloseDoor) this.#lastDoor.update({ ds: this.#lastDoor.wasLocked ? CONST.WALL_DOOR_STATES.LOCKED : CONST.WALL_DOOR_STATES.CLOSED });
+                delete this.#lastDoor.wasLocked;
+                this.#lastDoor = null;
             }
+
+            // Opens door
+            if (!next.door.isOpen) {
+                next.door.wasLocked = next.door.ds === CONST.WALL_DOOR_STATES.LOCKED;
+                next.door.update({ ds: CONST.WALL_DOOR_STATES.OPEN });
+            }
+            this.#lastDoor = next.door;
         }
 
         await this.token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true } });
         if (this.token.movementAnimationPromise) return this.token.movementAnimationPromise;
+    }
+
+    canPassDoor(door) {
+        if (!door) return false;
+
+        const doorBehavior = this.doorBehavior;
+        if ((door.ds === CONST.WALL_DOOR_STATES.LOCKED) && (!doorBehavior.includes("locked"))) return false;
+        if ((door.door === CONST.WALL_DOOR_TYPES.SECRET) && (doorBehavior.includes("secret"))) return true;
+        if ((door.door === CONST.WALL_DOOR_TYPES.DOOR) && (doorBehavior.includes("unlocked"))) return true;
+
+        return false;
+    }
+
+    get doorBehavior() {
+        let doorBehavior = this.token.document.getFlag(MODULE_ID, "doorBehavior") ?? ["useRegionSettings"];
+        if (doorBehavior.includes("useRegionSettings") && this.region) {
+            doorBehavior = Array.from(this.regionBehavior?.doorBehavior ?? []);
+        }
+        return doorBehavior;
+    }
+
+    get leaveDoorOpenChance() {
+        let doorBehavior = this.token.document.getFlag(MODULE_ID, "doorBehavior") ?? ["useRegionSettings"];
+        let leaveDoorOpenChance = this.token.document.getFlag(MODULE_ID, "leaveDoorOpen") ?? 0;
+        if (doorBehavior.includes("useRegionSettings") && this.region) {
+            leaveDoorOpenChance = this.regionBehavior?.leaveDoorOpen;
+        } 
+        return leaveDoorOpenChance;
     }
 
     // --- pathfinding ---
@@ -489,7 +534,7 @@ export class PatrolToken {
                 if (visited.has(key)) continue;
                 
                 // Must not be blocked by a wall
-                if (Patrol.wallBetween(cell, neighbor).blocked) continue;
+                if (Patrol.wallBetween(cell, neighbor, this).blocked) continue;
                 
                 // Must have enough space for the token to fit
                 if (!this.#tokenFits(neighbor)) continue;
@@ -516,6 +561,7 @@ export class PatrolToken {
         }
 
         const relevantCells = insideRegion ? cellsInsideRegion : cells;
+        if (relevantCells.length > 1) relevantCells.shift();
 
         return {
             destination: relevantCells[Math.floor(Math.random() * relevantCells.length)],
@@ -532,8 +578,8 @@ export class PatrolToken {
         for (let i = 0; i < height; i++) {
             for (let j = 0; j < width; j++) {
                 const subcell = { i: cell.i + i, j: cell.j + j };
-                if (j < width - 1 && Patrol.wallBetween(subcell, { i: subcell.i, j: subcell.j + 1 }).blocked) return false;
-                if (i < height - 1 && Patrol.wallBetween(subcell, { i: subcell.i + 1, j: subcell.j }).blocked) return false;
+                if (j < width - 1 && Patrol.wallBetween(subcell, { i: subcell.i, j: subcell.j + 1 }, this).blocked) return false;
+                if (i < height - 1 && Patrol.wallBetween(subcell, { i: subcell.i + 1, j: subcell.j }, this).blocked) return false;
             }
         }
 
@@ -562,7 +608,7 @@ export class PatrolToken {
 
                 if (visited.has(nk)) continue;
                 if (!ignoreBoundaries && !cellSet.has(nk)) continue;
-                const wall = Patrol.wallBetween(current, nb);
+                const wall = Patrol.wallBetween(current, nb, this);
                 if (wall.blocked) continue;
                 if (!this.#tokenFits(nb)) continue;
 

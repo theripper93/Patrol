@@ -5,6 +5,16 @@ class PatrolRegionBehaviorConfig extends foundry.applications.sheets.RegionBehav
 class PatrolRegionBehaviorType extends foundry.data.regionBehaviors.RegionBehaviorType {
     static defineSchema() {
         return {
+            type: new fields.StringField({
+                required: true,
+                initial: "area",
+                label: game.i18n.localize("TYPES.RegionBehavior.patrol.type.label"),
+                hint: game.i18n.localize("TYPES.RegionBehavior.patrol.type.hint"),
+                choices: { 
+                    "area": game.i18n.localize("TYPES.RegionBehavior.patrol.type.choices.area"),
+                    "edge": game.i18n.localize("TYPES.RegionBehavior.patrol.type.choices.edge")
+                },
+            }),
             whitelist: new fields.SetField(
                 new fields.StringField({ required: true }),
                 { label: game.i18n.localize("TYPES.RegionBehavior.patrol.whitelist") }
@@ -20,6 +30,25 @@ class PatrolRegionBehaviorType extends foundry.data.regionBehaviors.RegionBehavi
                 initial: 50,
                 label: game.i18n.localize("TYPES.RegionBehavior.patrol.weight.label"),
                 hint: game.i18n.localize("TYPES.RegionBehavior.patrol.weight.hint"),
+            }),
+            doorBehavior: new fields.SetField(
+                new fields.StringField({
+                    initial: "unlocked",
+                    choices: { 
+                        "unlocked": game.i18n.localize("patrol.tokenConfig.doorBehavior.choices.unlocked"),
+                        "locked": game.i18n.localize("patrol.tokenConfig.doorBehavior.choices.locked"),
+                        "secret": game.i18n.localize("patrol.tokenConfig.doorBehavior.choices.secret")
+                    },
+                }),
+                { label: game.i18n.localize("patrol.tokenConfig.doorBehavior.name") }
+            ),
+            leaveDoorOpen: new fields.NumberField({
+                min: 0,
+                max: 100,
+                step: 1,
+                initial: 0,
+                label: game.i18n.localize("patrol.tokenConfig.leaveDoorOpen.name"),
+                hint: game.i18n.localize("patrol.tokenConfig.leaveDoorOpen.hint"),
             }),
             darkness: new fields.SchemaField({
                 min: new fields.NumberField({
@@ -41,16 +70,6 @@ class PatrolRegionBehaviorType extends foundry.data.regionBehaviors.RegionBehavi
             }, {
                 validate: (value) => value.min <= value.max,
                 validationError: game.i18n.localize("TYPES.RegionBehavior.patrol.darkness.validationError"),
-            }),
-            type: new fields.StringField({
-                required: true,
-                initial: "area",
-                label: game.i18n.localize("TYPES.RegionBehavior.patrol.type.label"),
-                hint: game.i18n.localize("TYPES.RegionBehavior.patrol.type.hint"),
-                choices: { 
-                    "area": game.i18n.localize("TYPES.RegionBehavior.patrol.type.choices.area"),
-                    "edge": game.i18n.localize("TYPES.RegionBehavior.patrol.type.choices.edge")
-                },
             }),
         };
     }

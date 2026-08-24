@@ -89,7 +89,7 @@ export class Patrol {
         return allAdjacentOffsets;
     }
 
-    static wallBetween(cellA, cellB) {
+    static wallBetween(cellA, cellB, patrolToken) {
         const keyA = `${cellA.i},${cellA.j}`;
         const keyB = `${cellB.i},${cellB.j}`;
         const cacheKey = keyA < keyB ? `${keyA}-${keyB}` : `${keyB}-${keyA}`;
@@ -113,7 +113,7 @@ export class Patrol {
                 if (!wall) { result.blocked = true; continue; }
                 if (wall.isDoor) {
                     result.door = wall;
-                    if (!wall.isOpen && !getSetting("tokensOpenDoors")) result.blocked = true; // closed/locked doors block
+                    if (!wall.isOpen && !patrolToken.canPassDoor(wall)) result.blocked = true; // closed/locked doors block
                 } else {
                     result.blocked = true;
                 }

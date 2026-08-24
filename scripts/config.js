@@ -65,7 +65,8 @@ const renderTokenConfig = (app, html, data) => {
     if (!game.user.isGM || html.querySelector("input[name='flags.patrol.enablePatrol']")) return;
     
     const token = app.token;
-    
+    const doorBehavior = token.getFlag(MODULE_ID, "doorBehavior") ?? ["useRegionSettings"];
+
     const toggleHTML = `
         <fieldset>
             <legend><i class="fas fa-walking"></i> Patrol</legend>
@@ -77,6 +78,20 @@ const renderTokenConfig = (app, html, data) => {
                 <label>${game.i18n.localize("patrol.tokenConfig.enableSpotting.name")}</label>
                 <input type="checkbox" name="flags.${MODULE_ID}.enableSpotting" data-dtype="Boolean" ${token.getFlag(MODULE_ID, "enableSpotting") ? "checked" : ""}>
                 <p class="hint">${game.i18n.localize("patrol.tokenConfig.enableSpotting.hint")}</p>
+            </div>
+            <div class="form-group">
+                <label>${game.i18n.localize("patrol.tokenConfig.doorBehavior.name")}</label>
+                <multi-select name="flags.${MODULE_ID}.doorBehavior" data-dtype="String">
+                    <option value="useRegionSettings" ${doorBehavior.includes("useRegionSettings") ? "selected" : ""}>${game.i18n.localize("patrol.tokenConfig.doorBehavior.choices.useRegionSettings")}</option>
+                    <option value="unlocked" ${doorBehavior.includes("unlocked") ? "selected" : ""}>${game.i18n.localize("patrol.tokenConfig.doorBehavior.choices.unlocked")}</option>
+                    <option value="locked" ${doorBehavior.includes("locked") ? "selected" : ""}>${game.i18n.localize("patrol.tokenConfig.doorBehavior.choices.locked")}</option>
+                    <option value="secret" ${doorBehavior.includes("secret") ? "selected" : ""}>${game.i18n.localize("patrol.tokenConfig.doorBehavior.choices.secret")}</option>
+                </multi-select>
+            </div>
+            <div class="form-group">
+                <label>${game.i18n.localize("patrol.tokenConfig.leaveDoorOpen.name")}</label>
+                <range-picker name="flags.${MODULE_ID}.leaveDoorOpen" data-dtype="Number" min="0" max="100" step="1" value="${token.getFlag(MODULE_ID, "leaveDoorOpen") ?? 0}"></range-picker>
+                <p class="hint">${game.i18n.localize("patrol.tokenConfig.leaveDoorOpen.hint")}</p>
             </div>
         </fieldset>
     `;

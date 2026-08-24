@@ -54,6 +54,19 @@
             "enableSpotting": {
                 "name": "Spot Player Characters",
                 "hint": "Having multiple spotting tokens can be resource intensive. Handle with care."
+            },
+            "doorBehavior": {
+                "name": "Can Pass Doors?",
+                "choices": {
+                    "useRegionSettings": "Use Region Settings (also uses Region's 'Leave Door Open')",
+                    "unlocked": "Unlocked Doors",
+                    "locked": "Locked Doors",
+                    "secret": "Secret Doors"
+                }
+            },
+            "leaveDoorOpen": {
+                "name": "Leave Door Open",
+                "hint": "Chance that the Token will leave a door open after passing through it"
             }
         },
         "statusEffects": {
