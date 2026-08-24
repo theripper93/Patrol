@@ -24,9 +24,13 @@
         </button>
         <button type="button"
             data-action="toggleStepping"
-            data-tooltip="{{localize "patrol.patrol-app.toggleStepping"}}"
+            data-tooltip={{#if autoDisabled}}
+                "{{localize "patrol.patrol-app.toggleSteppingDisabled"}}"
+            {{else}}
+                "{{localize "patrol.patrol-app.toggleStepping"}}"
+            {{/if}}
             class="icon fas {{#if stepping}}fa-pause{{else}}fa-play{{/if}}"
-            {{#unless allTokens}}disabled{{/unless}}>
+            {{#if autoDisabled}}disabled{{/if}}>
         </button>
         <button type="button"
             data-action="stepForward"

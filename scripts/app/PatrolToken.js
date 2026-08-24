@@ -392,6 +392,8 @@ export class PatrolToken {
             const spotted = canTokenSeeToken(this.token, enemy, visionSource);
             if (!spotted) continue;
 
+            if (enemy.document.hasStatusEffect("patrolundetectable")) continue;
+
             const enemyOffset = canvas.grid.getOffset(enemyLocation ? enemyLocation : enemy.center);
             this.computePath(enemyOffset);
             if (this.path.length === 0) this.computePath();

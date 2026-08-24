@@ -61,7 +61,16 @@ export class Patrol {
             return;
         }
         const now = performance.now();
-        if (!game.paused) await pt.step(backward);
+        
+        if (game.combat?.started) {
+            Patrol.toggleStepping(false);
+            return;
+        }
+        
+        let canStep = true;
+        if (game.paused) canStep = false;
+        if (token === _token) canStep = false;
+        if (!canStep) await pt.step(backward);
 
         // Throttle
         const elapsed = performance.now() - now;

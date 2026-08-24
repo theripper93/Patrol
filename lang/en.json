@@ -6,13 +6,10 @@
             "selectSingle": "Step Selected",
             "stepBackward": "Step Backward",
             "stepForward": "Step Forward",
-            "toggleStepping": "Toggle Patrol"
+            "toggleStepping": "Toggle Patrol",
+            "toggleSteppingDisabled": "Auto Patrol is disabled in combat"
         },
         "settings": {
-            "tokensOpenDoors": {
-                "name": "Open Doors",
-                "hint": "Tokens can open doors when moving through them"
-            },
             "patrolMaxSuspicious": {
                 "name": "Max Suspicious Steps",
                 "hint": "Number of steps a token looks around before trying to chase a PC"

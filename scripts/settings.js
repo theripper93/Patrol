@@ -6,12 +6,6 @@ const DEFAULT_CACHE = true;
 
 export function registerSettings() {
     const settings = {
-        tokensOpenDoors: {
-            type: Boolean,
-            default: true,
-            scope: "world",
-            config: true
-        },
         patrolMaxSuspicious: {
             type: Number,
             default: 5,
