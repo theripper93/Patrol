@@ -81,6 +81,21 @@
                         "area": "Area",
                         "edge": "Edge"
                     }
+                },
+                "weight": {
+                    "label": "Weight",
+                    "hint": "How much weight this area has in the patrol algorithm. Higher weights will be preferred over lower ones."
+                },
+                "darkness": {
+                    "min": {
+                        "label": "Darkness Min",
+                        "hint": "Minimum darkness level for this area to be considered for patrol."
+                    },
+                    "max": {
+                        "label": "Darkness Max",
+                        "hint": "Maximum darkness level for this area to be considered for patrol."
+                    },
+                    "validationError": "Darkness min must be lower than darkness max."
                 }
             }
         }

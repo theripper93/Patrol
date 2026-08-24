@@ -34,8 +34,6 @@ export class PatrolToken {
     
     constructor(token) {
         this.#token = token;
-        this.#graphic = new PIXI.Graphics();
-        canvas.primary.addChild(this.#graphic);
     }
 
     get state() {
@@ -127,6 +125,7 @@ export class PatrolToken {
             const behavior = region.behaviors.contents.find(b => b.type === "patrol.patrolArea");
             if (!behavior) continue;
             if (behavior.disabled) continue;
+            if (!canvas.darknessLevel.between(behavior.system.darkness.min, behavior.system.darkness.max)) continue;
 
             const blacklist = behavior.system.blacklist;
             if (this.containsToken(blacklist)) continue;
@@ -139,11 +138,12 @@ export class PatrolToken {
                 atLeastOneWhitelisted = true;
             } 
 
+            const weightModifier = behavior.system.weight;
             const weight = maxDistance - Math.hypot(this.token.x - region.bounds.x, this.token.y - region.bounds.y);
 
             allowed.push({
                 region: region,
-                weight: weight,
+                weight: weight * weightModifier,
                 whitelisted: whitelisted,
             });
         }
@@ -359,6 +359,10 @@ export class PatrolToken {
     }
 
     updateGraphic(toggle = true) {
+        if (!this.#graphic || this.#graphic.destroyed) {
+            this.#graphic = new PIXI.Graphics();
+            canvas.primary.addChild(this.#graphic);
+        }
         this.#graphic.clear();
         if (!toggle) return;
 

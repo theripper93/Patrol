@@ -99,6 +99,8 @@ export class Patrol {
         const centerA = canvas.grid.getCenterPoint(cellA);
         const centerB = canvas.grid.getCenterPoint(cellB);
 
+        if (!game.scenes.viewed.dimensions.sceneRect.contains(centerB.x, centerB.y)) return { blocked: true };
+
         const collisions = CONFIG.Canvas.polygonBackends.move.testCollision(
             centerA, centerB, { type: "move", edgeTypes: { wall: { mode: 2 } } },
         );

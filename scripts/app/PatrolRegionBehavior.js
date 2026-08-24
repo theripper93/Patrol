@@ -13,6 +13,35 @@ class PatrolRegionBehaviorType extends foundry.data.regionBehaviors.RegionBehavi
                 new fields.StringField({ required: true }),
                 { label: game.i18n.localize("TYPES.RegionBehavior.patrol.blacklist") }
             ),
+            weight: new fields.NumberField({
+                min: 1,
+                max: 100,
+                step: 1,
+                initial: 50,
+                label: game.i18n.localize("TYPES.RegionBehavior.patrol.weight.label"),
+                hint: game.i18n.localize("TYPES.RegionBehavior.patrol.weight.hint"),
+            }),
+            darkness: new fields.SchemaField({
+                min: new fields.NumberField({
+                    min: 0,
+                    max: 1,
+                    step: 0.01,
+                    initial: 0,
+                    label: game.i18n.localize("TYPES.RegionBehavior.patrol.darkness.min.label"),
+                    hint: game.i18n.localize("TYPES.RegionBehavior.patrol.darkness.min.hint"),
+                }),
+                max: new fields.NumberField({
+                    min: 0,
+                    max: 1,
+                    step: 0.01,
+                    initial: 1,
+                    label: game.i18n.localize("TYPES.RegionBehavior.patrol.darkness.max.label"),
+                    hint: game.i18n.localize("TYPES.RegionBehavior.patrol.darkness.max.hint"),
+                }),
+            }, {
+                validate: (value) => value.min <= value.max,
+                validationError: game.i18n.localize("TYPES.RegionBehavior.patrol.darkness.validationError"),
+            }),
             type: new fields.StringField({
                 required: true,
                 initial: "area",
