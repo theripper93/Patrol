@@ -7,6 +7,10 @@ export class PatrolApp extends HandlebarsApplication {
 
     #allTokens = true;
 
+    get allowControlled() {
+        return !this.#allTokens;
+    }
+
     static get DEFAULT_OPTIONS() {
         return mergeObject(super.DEFAULT_OPTIONS, {
             window: {
