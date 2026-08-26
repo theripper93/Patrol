@@ -373,7 +373,15 @@ export class PatrolToken {
         const visionSource = new CONFIG.Canvas.visionSourceClass({object: this.token});
         visionSource.initialize(this.token._getVisionSourceData());
         if (!visionSource?.los) return 0;
-        
+
+        let maxRadius = 0;
+        let unbounded = false;
+        for (const mode of Object.values(this.token.document.detectionModes ?? {})) {
+            if (!mode?.enabled) continue;
+            if (mode.range === Infinity) { unbounded = true; break; }
+            if (mode.range > 0) maxRadius = Math.max(maxRadius, this.token.getLightRadius(mode.range));
+        }
+
         for (const enemy of canvas.tokens.placeables) {
             if (enemy.id === this.token.id) continue;
             let enemyLocation;
@@ -390,6 +398,12 @@ export class PatrolToken {
                 allyState = pt.state;
             }
             if (!enemyLocation && !enemy.actor?.hasPlayerOwner) continue;
+
+            if (!unbounded) {
+                const dx = enemy.center.x - this.token.center.x;
+                const dy = enemy.center.y - this.token.center.y;
+                if (Math.hypot(dx, dy) - Math.max(enemy.w, enemy.h) > maxRadius) continue;
+            }
 
             const spotted = canTokenSeeToken(this.token, enemy, visionSource);
             if (!spotted) continue;
