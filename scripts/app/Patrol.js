@@ -74,7 +74,8 @@ export class Patrol {
 
         // Throttle
         const elapsed = performance.now() - now;
-        if (elapsed < getSetting("minStepDelay")) await new Promise(resolve => setTimeout(resolve, getSetting("minStepDelay") - elapsed));
+        const minStepDelay = Math.max(getSetting("minStepDelay"), getSetting("animationDuration"));
+        if (elapsed < minStepDelay) await new Promise(resolve => setTimeout(resolve, minStepDelay - elapsed));
 
         if (Patrol.tokensStepTask) Patrol.stepToken(token, backward);
     }

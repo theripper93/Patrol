@@ -333,7 +333,7 @@ export class PatrolToken {
             this.#lastDoor = next.door;
         }
 
-        await this.token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true } });
+        await this.token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true }, animation: { duration: getSetting("animationDuration") } });
         if (this.token.movementAnimationPromise) return this.token.movementAnimationPromise;
     }
 

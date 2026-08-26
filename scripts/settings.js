@@ -34,7 +34,14 @@ export function registerSettings() {
         },
         minStepDelay: {
             type: Number,
-            default: 200,
+            default: 500,
+            min: 100,
+            scope: "world",
+            config: true,
+        },
+        animationDuration: {
+            type: Number,
+            default: 500,
             min: 100,
             scope: "world",
             config: true,

@@ -33,7 +33,11 @@
             },
             "minStepDelay": {
                 "name": "Minimum Step Delay",
-                "hint": "Minimum delay between steps in milliseconds. Actual time between movements will be dependant on Foundry's Token updates and Token movement on the map. Lower values can be resource intensive."
+                "hint": "Minimum delay between steps in milliseconds. If shorter than Animation Duration, Animation Duration will be used instead. Actual time between movements will be dependant on Foundry's Token updates and Token movement on the map. Lower values can be resource intensive."
+            },
+            "animationDuration": {
+                "name": "Animation Duration",
+                "hint": "Duration of Token movement animations in milliseconds."
             },
             "hidePatrolButtonInSidebar": {
                 "name": "Hide Patrol Panel button in Sidebar",
