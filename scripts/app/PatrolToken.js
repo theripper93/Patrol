@@ -243,12 +243,13 @@ export class PatrolToken {
 
     async step(backward = false) {
         if (!this.updateState()) return;
-
+        
+        const size = canvas.dimensions.size;
         const lastStep = this.#path[this.#step];
         if (
             lastStep &&
             !this.token.movementAnimationPromise &&
-            (this.token.document.x !== lastStep.x || this.token.document.y !== lastStep.y)
+            (Math.abs(this.token.document.x - lastStep.x) > size || Math.abs(this.token.document.y - lastStep.y) > size)
         ) {
             this.computePath();
             return;
@@ -268,7 +269,6 @@ export class PatrolToken {
 
         const checkOccupied = true;
         if (checkOccupied) {
-            const size = canvas.dimensions.size;
             let occupied = canvas.tokens.placeables.find(t => {
                 if (t.id === this.token.id) return false;
                 for (let i = 0; i < this.token.document.height; i++) {

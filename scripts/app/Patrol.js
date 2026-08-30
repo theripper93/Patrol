@@ -21,7 +21,7 @@ export class Patrol {
     }
 
     static clearTokens() {
-        this.#tokens.clear();
+        this.#tokens = new Map();
     }
 
     static clearWallCache() {
@@ -32,10 +32,9 @@ export class Patrol {
         for (const token of Patrol.#tokens.values()) token.updateGraphic(toggle);
     }
 
-    static refreshStepping() {
-        if (!this.stepping) return;
-
+    static refreshStepping() {        
         Patrol.clearTokens();
+        if (!this.stepping) return;
 
         Patrol.tokensStepTask = false;
         Patrol.toggleStepping(true);
@@ -69,8 +68,12 @@ export class Patrol {
         } else if (!pt && !isPatroller) {
             return;
         }
+        if (pt.isStepping) return;
+        pt.isStepping = true;
 
         if (!canvas.tokens.placeables?.includes(token)) {
+            pt.updateGraphic(false);
+            pt.isStepping = false;
             return;
         }
         
@@ -91,7 +94,8 @@ export class Patrol {
         const minStepDelay = Math.max(getSetting("minStepDelay"), getSetting("animationDuration"));
         if (elapsed < minStepDelay) await new Promise(resolve => setTimeout(resolve, minStepDelay - elapsed));
 
-        if (Patrol.tokensStepTask) Patrol.stepToken(token, backward);
+        pt.isStepping = false;
+        if (Patrol.tokensStepTask && Patrol.#tokens.has(token.id)) Patrol.stepToken(token, backward);
     }
 
     static async stepAllTokens(backward) {
