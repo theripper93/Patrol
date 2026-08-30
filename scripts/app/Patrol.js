@@ -35,6 +35,8 @@ export class Patrol {
     static refreshStepping() {
         if (!this.stepping) return;
 
+        Patrol.clearTokens();
+
         Patrol.tokensStepTask = false;
         Patrol.toggleStepping(true);
     }
@@ -60,18 +62,17 @@ export class Patrol {
         let pt = Patrol.getToken(token.id);
         if (!pt && isPatroller) {
             pt = new PatrolToken(token);
-            this.#tokens.set(token.id, pt);
+            Patrol.#tokens.set(token.id, pt);
         } else if (pt && !isPatroller) {
-            this.#tokens.delete(token.id);
+            Patrol.#tokens.delete(token.id);
             return;
         } else if (!pt && !isPatroller) {
             return;
         }
 
         if (!canvas.tokens.placeables?.includes(token)) {
-            this.#tokens.delete(token.id);
             return;
-        };
+        }
         
         if (game.combat?.started) {
             Patrol.toggleStepping(false);
@@ -91,12 +92,10 @@ export class Patrol {
         if (elapsed < minStepDelay) await new Promise(resolve => setTimeout(resolve, minStepDelay - elapsed));
 
         if (Patrol.tokensStepTask) Patrol.stepToken(token, backward);
-        else Patrol.#tokens.delete(token.id);
     }
 
     static async stepAllTokens(backward) {
         for (const token of canvas.tokens.placeables) {
-            if (Patrol.#tokens.has(token.id)) continue;
             if (Patrol.tokensStepTask) {
                 const randomDelay = Math.random() * getSetting("minStepDelay");
                 setTimeout(() => Patrol.stepToken(token, backward), randomDelay);
