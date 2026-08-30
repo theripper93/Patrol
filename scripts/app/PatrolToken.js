@@ -143,7 +143,7 @@ export class PatrolToken {
             } 
 
             const weightModifier = behavior.system.weight;
-            const weight = maxDistance - Math.hypot(this.token.x - region.bounds.x, this.token.y - region.bounds.y);
+            const weight = maxDistance - Math.hypot(this.token.document.x - region.bounds.x, this.token.document.y - region.bounds.y);
 
             allowed.push({
                 region: region,

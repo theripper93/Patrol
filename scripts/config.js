@@ -59,6 +59,12 @@ export function setupHooks() {
             img: "icons/svg/eye.svg",
         };
     });
+    
+    Hooks.on("canvasReady", () => {
+        if (Patrol.stepping) {
+            Patrol.refreshStepping();
+        }
+    });
 }
 
 const renderTokenConfig = (app, html, data) => {
