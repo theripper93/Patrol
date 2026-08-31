@@ -120,12 +120,14 @@ export class PatrolToken {
 
     getAllowedRegions() {
         const scene = this.token.document.parent;
-        const regions = scene.regions.contents;
+        const regions = canvas.regions.placeables;
 
         let atLeastOneWhitelisted = false;
         const maxDistance = Math.hypot(canvas.dimensions.width, canvas.dimensions.height);
         const allowed = [];
-        for (const region of regions) {
+        for (const regionObj of regions) {
+            const region = regionObj.document;
+            if (!region) continue;
             const behavior = region.behaviors.contents.find(b => b.type === "patrol.patrolArea");
             if (!behavior) continue;
             if (behavior.disabled) continue;
