@@ -423,7 +423,7 @@ export class PatrolToken {
                 Hooks.call("patrolSpotted", this.token, enemy);
             }
 
-            const enemyOffset = canvas.grid.getOffset(enemyLocation ? enemyLocation : enemy.center);
+            const enemyOffset = Patrol.grid.getOffset(enemyLocation ? enemyLocation : enemy.center);
             this.computePath(enemyOffset);
             if (this.path.length === 0) this.computePath();
             if (!enemyLocation && !this.#enemyLocation) this.#enemyLocation = this.destination;
@@ -460,7 +460,7 @@ export class PatrolToken {
         this.#enemyLocation = null;
 
         let path;
-        const start = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
+        const start = Patrol.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
         if (this.isEdgeRegion() && !specificDestination) {
             path = this.computeClosePath();
         } else {
@@ -492,12 +492,12 @@ export class PatrolToken {
     computeClosePath() {
         const polygon = this.region.polygons[0];
         const points = polygon.points;
-        const tokenOffset = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
+        const tokenOffset = Patrol.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
         const regionVertices = [];
 
         // Take polygon points
         for (let i = 0; i < points.length; i += 2) {
-            const cell = canvas.grid.getOffset({ x: points[i], y: points[i + 1] });
+            const cell = Patrol.grid.getOffset({ x: points[i], y: points[i + 1] });
             regionVertices.push(cell);
         }
         
@@ -538,7 +538,7 @@ export class PatrolToken {
     }
 
     #getNextDestination() {
-        const startOffset = canvas.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
+        const startOffset = Patrol.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
         const visited = new Set();
         const frontier = [startOffset];
         const cells = [];
@@ -571,7 +571,7 @@ export class PatrolToken {
                 
                 if (this.region) {
                     // Must be inside the region polygon
-                    const center = canvas.grid.getCenterPoint(neighbor);
+                    const center = Patrol.grid.getCenterPoint(neighbor);
                     if (!this.region.polygonTree.testPoint(center)) {
                         if (insideRegion) continue;
                     } else {
@@ -592,9 +592,25 @@ export class PatrolToken {
 
         const relevantCells = insideRegion ? cellsInsideRegion : cells;
         if (relevantCells.length > 1) relevantCells.shift();
+        
+        let destination;
+        if (!this.region) {
+            const blacklistedRegions = canvas.regions.placeables.filter(r => {
+                const blacklist = r.document.behaviors.contents.find(b => b.type === "patrol.patrolArea")?.system?.blacklist;
+                if (!blacklist) return false;
+                return this.containsToken(blacklist);
+            });
+            while (relevantCells.length > 1) {
+                const randomCellIndex = Math.floor(Math.random() * relevantCells.length);
+                destination = relevantCells[randomCellIndex];
+                const destinationPoint = Patrol.grid.getCenterPoint(destination);
+                if (!blacklistedRegions.some(r => r.document.polygonTree.testPoint(destinationPoint))) break;
+                relevantCells.splice(randomCellIndex, 1);
+            }
+        }
 
         return {
-            destination: relevantCells[Math.floor(Math.random() * relevantCells.length)],
+            destination: destination || relevantCells[Math.floor(Math.random() * relevantCells.length)],
             validCells: cells
         }
     }
@@ -654,7 +670,7 @@ export class PatrolToken {
         let cur = end;
         let iterations = 0;
         while (true) {
-            const cell = canvas.grid.getTopLeftPoint(cur);
+            const cell = Patrol.grid.getTopLeftPoint(cur);
             path.push({...cell, door: cur.door });
             const ck = `${cur.i},${cur.j}`;
             if (ck === sk) break;

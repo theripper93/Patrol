@@ -32,8 +32,17 @@ export class Patrol {
         for (const token of Patrol.#tokens.values()) token.updateGraphic(toggle);
     }
 
+    static updateGridType() {
+        if (canvas.grid.type !== CONST.GRID_TYPES.GRIDLESS) {
+            this.grid = canvas.grid;
+            return;
+        }
+        this.grid = new foundry.grid.SquareGrid(canvas.scene.grid);
+    }
+
     static refreshStepping() {        
         Patrol.clearTokens();
+        Patrol.clearWallCache();
         if (!this.stepping) return;
 
         Patrol.tokensStepTask = false;
@@ -71,7 +80,7 @@ export class Patrol {
         if (pt.isStepping) return;
         pt.isStepping = true;
 
-        if (!canvas.tokens.placeables?.includes(token)) {
+        if (!canvas.tokens.placeables?.includes(token) || (token.document.level !== canvas.level.id)) {
             pt.updateGraphic(false);
             pt.isStepping = false;
             return;
@@ -109,10 +118,10 @@ export class Patrol {
         }
     }
 
-    static getAdjacentOffsets(cell, options = { diagonals: true }) {
-        const allAdjacentOffsets = canvas.grid.getAdjacentOffsets(cell);
-        if (!options.diagonals) {
-            return allAdjacentOffsets.filter(offset => offset.i === cell.i || offset.j === cell.j);
+    static getAdjacentOffsets(coords, options = { diagonals: true }) {
+        const allAdjacentOffsets = Patrol.grid.getAdjacentOffsets(coords);
+        if (!options.diagonals && (Patrol.grid.type === CONST.GRID_TYPES.SQUARE)) {
+            return allAdjacentOffsets.filter(offset => offset.i === coords.i || offset.j === coords.j);
         }
         return allAdjacentOffsets;
     }
@@ -124,8 +133,8 @@ export class Patrol {
 
         if (Patrol.wallCache.has(cacheKey)) return Patrol.wallCache.get(cacheKey);
 
-        const centerA = canvas.grid.getCenterPoint(cellA);
-        const centerB = canvas.grid.getCenterPoint(cellB);
+        const centerA = Patrol.grid.getCenterPoint(cellA);
+        const centerB = Patrol.grid.getCenterPoint(cellB);
 
         if (!game.scenes.viewed.dimensions.sceneRect.contains(centerB.x, centerB.y)) return { blocked: true };
 

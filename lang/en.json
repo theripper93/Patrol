@@ -11,12 +11,12 @@
         },
         "settings": {
             "patrolMaxSuspicious": {
-                "name": "Max Suspicious Steps",
-                "hint": "Number of steps a token looks around before trying to chase a PC"
+                "name": "Max Suspicious Cycles",
+                "hint": "Number of cycles a token looks around before trying to chase a PC"
             },
             "patrolMaxAlerted": {
-                "name": "Max Alerted Steps",
-                "hint": "Number of steps a token must have line of sight on a chased PC before actually spotting it"
+                "name": "Max Alerted Cycles",
+                "hint": "Number of cycles a token must have line of sight on a chased PC before actually spotting it"
             },
             "patrolSound": {
                 "name": "Spotted Sound",
@@ -32,8 +32,8 @@
                 "label": "Open Patrol Panel"
             },
             "minStepDelay": {
-                "name": "Minimum Step Delay",
-                "hint": "Minimum delay between steps in milliseconds. If shorter than Animation Duration, Animation Duration will be used instead. Actual time between movements will be dependant on Foundry's Token updates and Token movement on the map. Lower values can be resource intensive."
+                "name": "Minimum Cycle Delay",
+                "hint": "Minimum delay between cycles in milliseconds. If shorter than Animation Duration, Animation Duration will be used instead. Actual time between movements will be dependant on Foundry's Token updates and Token movement on the map. Lower values can be resource intensive."
             },
             "animationDuration": {
                 "name": "Animation Duration",

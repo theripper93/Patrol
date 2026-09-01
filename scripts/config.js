@@ -64,6 +64,7 @@ export function setupHooks() {
         if (Patrol.stepping) {
             Patrol.refreshStepping();
         }
+        Patrol.updateGridType();
     });
 }
 
