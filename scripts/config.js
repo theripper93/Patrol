@@ -69,7 +69,7 @@ export function setupHooks() {
         }
         const original = CONFIG.statusEffects[id];
         addEffect(foundry.utils.mergeObject(original ?? {}, { id, ...data }, { inplace: false }));
-        CONFIG.statusEffects = statusEffects;
+        CONFIG.statusEffects[id] = statusEffects[id];
     });
     
     Hooks.on("canvasReady", () => {
