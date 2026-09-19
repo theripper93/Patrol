@@ -53,11 +53,23 @@ export function setupHooks() {
     }
 
     Hooks.on("ready", () => {
-        CONFIG.statusEffects["patrolundetectable"] = {
+        const statusEffects = {};
+        const addEffect = ({special, ...data}) => {
+            data = foundry.utils.deepClone(data);
+            data._id = data.id;
+            data.order ??= Infinity;
+            statusEffects[data.id] = data;
+            if ( special ) CONFIG.specialStatusEffects[special] = data.id;
+        };
+        const id = "patrolundetectable";
+        const data = {
             id: "patrolundetectable",
             name: game.i18n.localize(`${MODULE_ID}.statusEffects.patrolundetectable.name`),
             img: "icons/svg/eye.svg",
-        };
+        }
+        const original = CONFIG.statusEffects[id];
+        addEffect(foundry.utils.mergeObject(original ?? {}, { id, ...data }, { inplace: false }));
+        CONFIG.statusEffects = statusEffects;
     });
     
     Hooks.on("canvasReady", () => {
