@@ -56,7 +56,7 @@ export function setupHooks() {
         const statusEffects = {};
         const addEffect = ({special, ...data}) => {
             data = foundry.utils.deepClone(data);
-            data._id = data.id;
+            // data._id = data.id;
             data.order ??= Infinity;
             statusEffects[data.id] = data;
             if ( special ) CONFIG.specialStatusEffects[special] = data.id;
