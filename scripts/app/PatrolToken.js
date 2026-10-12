@@ -507,44 +507,34 @@ export class PatrolToken {
             regionVertices.push(cell);
         }
 
-        if (this.regionBehavior?.backAndForth) {
+        const backAndForth = this.regionBehavior?.backAndForth;
+        if (backAndForth) {
             if (this.reverseEdgePath) regionVertices.reverse();
             this.reverseEdgePath = !this.reverseEdgePath;
         }
         
-        // Add all other vertices
-        let tokenInRegion = false;
-        const regionBoundaryCells = [];
-        for (let i = 0; i < regionVertices.length - 1; i++) {
-            let path = this.#getPathFromTo([], regionVertices[i], regionVertices[i + 1], true);
-            if (path.length === 0) {
-                for (let j = i + 1; j < regionVertices.length - 1; j++) {
-                    path = this.#getPathFromTo([], regionVertices[i], regionVertices[j], true);
-                    if (path.length > 1) break;
-                }
-            }
-            if (path.length < 2) continue;
-            path.pop();
-            for (const cell of path) {
-                if (cell.i === tokenOffset.i && cell.j === tokenOffset.j) tokenInRegion = true;
-                regionBoundaryCells.push(cell);
+        let startIndex = -1;
+        let approachPath = [];
+        for (let i = 0; i < regionVertices.length; i++) {
+            approachPath = this.#getPathFromTo([], tokenOffset, regionVertices[i], true);
+            if (approachPath.length > 0) {
+                startIndex = i;
+                break;
             }
         }
-        
-        // Add token position if not in polygon
-        if (!tokenInRegion) {
-            const path = this.#getPathFromTo([], tokenOffset, regionVertices[0], true);
-            if (path.length < 2) return [tokenOffset];
-            regionBoundaryCells.unshift(...path);
-        }
+        if (startIndex === -1) return [tokenOffset];
 
-        // Close the polygon
-        if (!this.regionBehavior?.backAndForth) {
-            const path = this.#getPathFromTo([], regionVertices[regionVertices.length - 1], regionVertices[0], true);
-            if (path.length > 0) {
-                if (path.length > 1) path.pop();
-                regionBoundaryCells.push(...path);
-            }
+        const targets = regionVertices.slice(startIndex + 1);
+        if (!backAndForth) targets.push(...regionVertices.slice(0, startIndex), regionVertices[startIndex]);
+
+        const regionBoundaryCells = approachPath;
+        let lastReached = regionVertices[startIndex];
+        for (const target of targets) {
+            const path = this.#getPathFromTo([], lastReached, target, true);
+            if (path.length < 2) continue;
+            path.shift();
+            regionBoundaryCells.push(...path);
+            lastReached = target;
         }
 
         return regionBoundaryCells;
