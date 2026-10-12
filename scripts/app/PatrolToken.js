@@ -249,6 +249,8 @@ export class PatrolToken {
     async step(backward = false) {
         if (!this.updateState()) return;
         
+        if (this.token.movementAnimationPromise) await this.token.movementAnimationPromise;
+
         const size = canvas.dimensions.size;
         const lastStep = this.#path[this.#step];
         if (
@@ -266,7 +268,7 @@ export class PatrolToken {
 
         if ((step >= this.#path.length) || (step < 0)) {
             this.computePath();
-            if (step > 1) this.step();
+            if (step > 1) return this.step();
             return;
         }
 
