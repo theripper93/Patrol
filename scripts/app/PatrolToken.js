@@ -492,6 +492,7 @@ export class PatrolToken {
         this.#retreating = false;
     }
 
+    reverseEdgePath = false;
     computeClosePath() {
         const polygon = this.region.polygons[0];
         const points = polygon.points;
@@ -502,6 +503,11 @@ export class PatrolToken {
         for (let i = 0; i < points.length; i += 2) {
             const cell = Patrol.grid.getOffset({ x: points[i], y: points[i + 1] });
             regionVertices.push(cell);
+        }
+
+        if (this.regionBehavior?.backAndForth) {
+            if (this.reverseEdgePath) regionVertices.reverse();
+            this.reverseEdgePath = !this.reverseEdgePath;
         }
         
         // Add all other vertices
@@ -531,10 +537,12 @@ export class PatrolToken {
         }
 
         // Close the polygon
-        const path = this.#getPathFromTo([], regionVertices[regionVertices.length - 1], regionVertices[0], true);
-        if (path.length > 0) {
-            if (path.length > 1) path.pop();
-            regionBoundaryCells.push(...path);
+        if (!this.regionBehavior?.backAndForth) {
+            const path = this.#getPathFromTo([], regionVertices[regionVertices.length - 1], regionVertices[0], true);
+            if (path.length > 0) {
+                if (path.length > 1) path.pop();
+                regionBoundaryCells.push(...path);
+            }
         }
 
         return regionBoundaryCells;

@@ -96,6 +96,10 @@
                         "edge": "Edge"
                     }
                 },
+                "backAndForth": {
+                    "label": "Back and Forth (Edge)",
+                    "hint": "If enabled and Type is Edge, tokens will patrol back and forth along the path instead of looping around."
+                },
                 "weight": {
                     "label": "Weight",
                     "hint": "How much weight this area has in the patrol algorithm. Higher weights will be preferred over lower ones."

@@ -15,6 +15,11 @@ class PatrolRegionBehaviorType extends foundry.data.regionBehaviors.RegionBehavi
                     "edge": game.i18n.localize("TYPES.RegionBehavior.patrol.type.choices.edge")
                 },
             }),
+            backAndForth: new fields.BooleanField({
+                initial: false,
+                label: game.i18n.localize("TYPES.RegionBehavior.patrol.backAndForth.label"),
+                hint: game.i18n.localize("TYPES.RegionBehavior.patrol.backAndForth.hint"),
+            }),
             whitelist: new fields.SetField(
                 new fields.StringField({ required: true }),
                 { label: game.i18n.localize("TYPES.RegionBehavior.patrol.whitelist") }
