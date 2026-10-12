@@ -63,6 +63,10 @@ export class PatrolToken {
         return this.#token;
     }
 
+    get level() {
+        return this.token.document.parent.levels.get(this.token.document.level);
+    }
+
     get region() {
         return this.#region;
     }
@@ -120,14 +124,13 @@ export class PatrolToken {
 
     getAllowedRegions() {
         const scene = this.token.document.parent;
-        const regions = canvas.regions.placeables;
+        const level = this.level;
 
         let atLeastOneWhitelisted = false;
         const maxDistance = Math.hypot(canvas.dimensions.width, canvas.dimensions.height);
         const allowed = [];
-        for (const regionObj of regions) {
-            const region = regionObj.document;
-            if (!region) continue;
+        for (const region of scene.regions) {
+            if (!region.includedInLevel(level)) continue;
             const behavior = region.behaviors.contents.find(b => b.type === "patrol.patrolArea");
             if (!behavior) continue;
             if (behavior.disabled) continue;
@@ -595,8 +598,10 @@ export class PatrolToken {
         
         let destination;
         if (!this.region) {
-            const blacklistedRegions = canvas.regions.placeables.filter(r => {
-                const blacklist = r.document.behaviors.contents.find(b => b.type === "patrol.patrolArea")?.system?.blacklist;
+            const level = this.level;
+            const blacklistedRegions = this.token.document.parent.regions.filter(r => {
+                if (!r.includedInLevel(level)) return false;
+                const blacklist = r.behaviors.contents.find(b => b.type === "patrol.patrolArea")?.system?.blacklist;
                 if (!blacklist) return false;
                 return this.containsToken(blacklist);
             });
@@ -604,7 +609,7 @@ export class PatrolToken {
                 const randomCellIndex = Math.floor(Math.random() * relevantCells.length);
                 destination = relevantCells[randomCellIndex];
                 const destinationPoint = Patrol.grid.getCenterPoint(destination);
-                if (!blacklistedRegions.some(r => r.document.polygonTree.testPoint(destinationPoint))) break;
+                if (!blacklistedRegions.some(r => r.polygonTree.testPoint(destinationPoint))) break;
                 relevantCells.splice(randomCellIndex, 1);
             }
         }

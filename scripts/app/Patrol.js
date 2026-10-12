@@ -80,7 +80,7 @@ export class Patrol {
         if (pt.isStepping) return;
         pt.isStepping = true;
 
-        if (!canvas.tokens.placeables?.includes(token) || (token.document.level !== canvas.level.id)) {
+        if (!canvas.tokens.placeables?.includes(token)) {
             pt.updateGraphic(false);
             pt.isStepping = false;
             return;
@@ -129,17 +129,18 @@ export class Patrol {
     static wallBetween(cellA, cellB, patrolToken) {
         const keyA = `${cellA.i},${cellA.j}`;
         const keyB = `${cellB.i},${cellB.j}`;
-        const cacheKey = keyA < keyB ? `${keyA}-${keyB}` : `${keyB}-${keyA}`;
+        const level = patrolToken.level;
+        const cacheKey = `${level.id}:` + (keyA < keyB ? `${keyA}-${keyB}` : `${keyB}-${keyA}`);
 
         if (Patrol.wallCache.has(cacheKey)) return Patrol.wallCache.get(cacheKey);
 
         const centerA = Patrol.grid.getCenterPoint(cellA);
         const centerB = Patrol.grid.getCenterPoint(cellB);
 
-        if (!game.scenes.viewed.dimensions.sceneRect.contains(centerB.x, centerB.y)) return { blocked: true };
+        if (!level.parent.dimensions.sceneRect.contains(centerB.x, centerB.y)) return { blocked: true };
 
         const collisions = CONFIG.Canvas.polygonBackends.move.testCollision(
-            centerA, centerB, { type: "move", edgeTypes: { wall: { mode: 2 } } },
+            centerA, centerB, { type: "move", level, edgeTypes: { wall: { mode: 2 } } },
         );
 
         const result = { };
