@@ -1,0 +1,121 @@
+{
+    "patrol": {
+        "patrol-app": {
+            "title": "Panneau de patrouille",
+            "selectAll": "Avancer tous",
+            "selectSingle": "Avancer la sélection",
+            "stepBackward": "Pas en arrière",
+            "stepForward": "Pas en avant",
+            "toggleStepping": "Activer/désactiver la patrouille",
+            "toggleSteppingDisabled": "La patrouille automatique est désactivée en combat et lors du déplacement pas à pas de jetons individuels"
+        },
+        "settings": {
+            "patrolMaxSuspicious": {
+                "name": "Cycles de suspicion max.",
+                "hint": "Nombre de cycles pendant lesquels un jeton regarde autour de lui avant de tenter de poursuivre un PJ"
+            },
+            "patrolMaxAlerted": {
+                "name": "Cycles d'alerte max.",
+                "hint": "Nombre de cycles pendant lesquels un jeton doit avoir une ligne de vue sur un PJ poursuivi avant de le repérer réellement"
+            },
+            "patrolSound": {
+                "name": "Son de repérage",
+                "hint": "Son joué lorsqu'un PJ est repéré par un ennemi"
+            },
+            "patrolAlert": {
+                "name": "Son d'alerte",
+                "hint": "Son joué lorsqu'un ennemi est alerté par un PJ"
+            },
+            "openApplication": {
+                "name": "Panneau de patrouille",
+                "hint": "Ouvre le panneau de patrouille. Vous pouvez aussi faire Alt+clic gauche sur le bouton Patrouille dans les contrôles de scène des jetons, ou utiliser la commande de macro 'ui.patrolApp.render({ force: true })'.",
+                "label": "Ouvrir le panneau de patrouille"
+            },
+            "minStepDelay": {
+                "name": "Délai minimum entre les cycles",
+                "hint": "Délai minimum entre deux cycles, en millisecondes. S'il est inférieur à la durée d'animation, c'est la durée d'animation qui sera utilisée. Le temps réel entre deux déplacements dépendra des mises à jour des jetons par Foundry et de leur déplacement sur la carte. Des valeurs faibles peuvent être gourmandes en ressources."
+            },
+            "animationDuration": {
+                "name": "Durée d'animation",
+                "hint": "Durée des animations de déplacement des jetons, en millisecondes."
+            },
+            "hidePatrolButtonInSidebar": {
+                "name": "Masquer le bouton du panneau de patrouille dans la barre latérale",
+                "hint": "Masque le bouton du panneau de patrouille dans l'onglet Acteurs de la barre latérale. Vous pouvez toujours utiliser la commande de macro 'ui.patrolApp.render({ force: true })' ou faire Alt+clic gauche sur le bouton Patrouille dans les contrôles de scène des jetons."
+            },
+            "migrateOnStartupDialog": {
+                "name": "Ouvrir la fenêtre de migration au démarrage",
+                "hint": "Si activé, le module ouvrira au démarrage une fenêtre permettant de migrer les données de la structure V13 vers celle de la V14."
+            }
+        },
+        "tokenConfig": {
+            "enablePatrol": {
+                "name": "Activer la patrouille"
+            },
+            "enableSpotting": {
+                "name": "Repérer les personnages joueurs",
+                "hint": "Avoir plusieurs jetons capables de repérer peut être gourmand en ressources. À utiliser avec précaution."
+            },
+            "doorBehavior": {
+                "name": "Peut franchir les portes ?",
+                "choices": {
+                    "useRegionSettings": "Utiliser les paramètres de la région (utilise aussi « Laisser la porte ouverte » de la région)",
+                    "unlocked": "Portes déverrouillées",
+                    "locked": "Portes verrouillées",
+                    "secret": "Portes secrètes"
+                }
+            },
+            "leaveDoorOpen": {
+                "name": "Laisser la porte ouverte",
+                "hint": "Probabilité que le jeton laisse une porte ouverte après l'avoir franchie"
+            }
+        },
+        "statusEffects": {
+            "patrolundetectable": {
+                "name": "Patrouille - Indétectable"
+            }
+        },
+        "tools": {
+            "patrolToggle": {
+                "app": "Afficher/masquer le panneau de patrouille",
+                "stepping": "Activer/désactiver la patrouille des jetons"
+            }
+        }
+    },
+    "TYPES": {
+        "RegionBehavior": {
+            "patrol": {
+                "patrolArea": "Zone de patrouille",
+                "whitelist": "Liste blanche",
+                "blacklist": "Liste noire",
+                "type": {
+                    "label": "Type",
+                    "hint": "Choisissez si les jetons patrouillent dans la zone ou gardent ses bords",
+                    "choices": {
+                        "area": "Zone",
+                        "edge": "Bord"
+                    }
+                },
+                "backAndForth": {
+                    "label": "Aller-retour (Bord)",
+                    "hint": "Si activé et que le type est Bord, les jetons patrouilleront en aller-retour le long du tracé au lieu de faire une boucle."
+                },
+                "weight": {
+                    "label": "Poids",
+                    "hint": "Poids de cette zone dans l'algorithme de patrouille. Les zones au poids plus élevé seront privilégiées."
+                },
+                "darkness": {
+                    "min": {
+                        "label": "Obscurité min.",
+                        "hint": "Niveau d'obscurité minimum pour que cette zone soit prise en compte dans la patrouille."
+                    },
+                    "max": {
+                        "label": "Obscurité max.",
+                        "hint": "Niveau d'obscurité maximum pour que cette zone soit prise en compte dans la patrouille."
+                    },
+                    "validationError": "L'obscurité min. doit être inférieure à l'obscurité max."
+                }
+            }
+        }
+    }
+}
