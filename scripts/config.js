@@ -73,9 +73,7 @@ export function setupHooks() {
     });
     
     Hooks.on("canvasReady", () => {
-        if (Patrol.stepping) {
-            Patrol.refreshStepping();
-        }
+        Patrol.refreshStepping();
         Patrol.updateGridType();
     });
 }

@@ -41,7 +41,10 @@ export class Patrol {
     }
 
     static refreshStepping() {        
-        Patrol.clearTokens();
+        for (const [id, pt] of Patrol.#tokens) {
+            if (pt.token?.document.parent === canvas.scene) pt.resetPath();
+            else Patrol.#tokens.delete(id);
+        }
         Patrol.clearWallCache();
         if (!this.stepping) return;
 
@@ -66,6 +69,13 @@ export class Patrol {
     }
 
     static async stepToken(token, backward) {
+        const tokenId = token.id;
+        token = canvas.tokens.get(tokenId);
+        if (!token) {
+            Patrol.#tokens.get(tokenId)?.updateGraphic(false);
+            Patrol.#tokens.delete(tokenId);
+            return;
+        }
         const isPatroller = token.document.getFlag(MODULE_ID, "enablePatrol"); 
         let pt = Patrol.getToken(token.id);
         if (!pt && isPatroller) {
@@ -80,12 +90,6 @@ export class Patrol {
         if (pt.isStepping) return;
         pt.isStepping = true;
 
-        if (!canvas.tokens.placeables?.includes(token)) {
-            pt.updateGraphic(false);
-            pt.isStepping = false;
-            return;
-        }
-        
         if (game.combat?.started) {
             Patrol.toggleStepping(false);
             return;
@@ -95,6 +99,7 @@ export class Patrol {
 
         let canStep = true;
         if (game.paused) canStep = false;
+        if (Patrol.isAwaitingLevelChange(token.document)) canStep = false;
         if (!ui.patrolApp?.allowControlled && token.controlled) canStep = false;
         if (canStep) await pt.step(backward);
 
@@ -105,6 +110,16 @@ export class Patrol {
 
         pt.isStepping = false;
         if (Patrol.tokensStepTask && Patrol.#tokens.has(token.id)) Patrol.stepToken(token, backward);
+    }
+
+    static isAwaitingLevelChange(tokenDocument) {
+        for (const region of tokenDocument.regions) {
+            for (const behavior of region.behaviors) {
+                if (behavior.type !== "changeLevel" || behavior.disabled) continue;
+                if (foundry.applications.instances.has(`dialog-${behavior.uuid}-${tokenDocument.id}`)) return true;
+            }
+        }
+        return false;
     }
 
     static async stepAllTokens(backward) {

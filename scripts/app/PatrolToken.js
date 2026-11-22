@@ -10,7 +10,8 @@ const CHANCE_TO_LOITER = 0.8;
 const CHANCE_TO_SWAP = 0.3;
 
 export class PatrolToken {
-    #token;
+    #document;
+    #pathLevel;
     #region;
     #step = 0;
     #loiter = 0;
@@ -33,7 +34,7 @@ export class PatrolToken {
     }
     
     constructor(token) {
-        this.#token = token;
+        this.#document = token.document;
     }
 
     get state() {
@@ -60,7 +61,12 @@ export class PatrolToken {
     }
 
     get token() {
-        return this.#token;
+        return this.#document.object;
+    }
+
+    get startOffset() {
+        const half = canvas.dimensions.size / 2;
+        return Patrol.grid.getOffset({ x: this.token.document.x + half, y: this.token.document.y + half });
     }
 
     get level() {
@@ -251,20 +257,26 @@ export class PatrolToken {
         
         if (this.token.movementAnimationPromise) await this.token.movementAnimationPromise;
 
+        if (this.token.document.level !== this.#pathLevel) {
+            this.computePath();
+            return;
+        }
+
         const size = canvas.dimensions.size;
         const lastStep = this.#path[this.#step];
-        if (
-            lastStep &&
-            !this.token.movementAnimationPromise &&
-            (Math.abs(this.token.document.x - lastStep.x) > size || Math.abs(this.token.document.y - lastStep.y) > size)
-        ) {
+        const dx = lastStep ? Math.abs(this.token.document.x - lastStep.x) : 0;
+        const dy = lastStep ? Math.abs(this.token.document.y - lastStep.y) : 0;
+        const offStep = !this.token.movementAnimationPromise && (dx > 0 || dy > 0);
+        if (offStep && (dx > size || dy > size)) {
             this.computePath();
             return;
         }
 
         let step = this.#step;
-        if (this.#retreating || backward) step--;
-        else step++;
+        if (!offStep) {
+            if (this.#retreating || backward) step--;
+            else step++;
+        }
 
         if ((step >= this.#path.length) || (step < 0)) {
             this.computePath();
@@ -321,7 +333,7 @@ export class PatrolToken {
             leaveDoorOpenChance = this.regionBehavior.leaveDoorOpen;
         }
 
-        const canPassDoor = this.canPassDoor(next.door);
+        const canPassDoor = !offStep && this.canPassDoor(next.door);
         
         if (canPassDoor) {
             // Closes door just traversed
@@ -465,7 +477,8 @@ export class PatrolToken {
         this.#enemyLocation = null;
 
         let path;
-        const start = Patrol.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
+        this.#pathLevel = this.token.document.level;
+        const start = this.startOffset;
         if (this.isEdgeRegion() && !specificDestination) {
             path = this.computeClosePath();
         } else {
@@ -494,11 +507,16 @@ export class PatrolToken {
         this.#retreating = false;
     }
 
+    resetPath() {
+        this.#path = [];
+        this.#step = 0;
+    }
+
     reverseEdgePath = false;
     computeClosePath() {
         const polygon = this.region.polygons[0];
         const points = polygon.points;
-        const tokenOffset = Patrol.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
+        const tokenOffset = this.startOffset;
         const regionVertices = [];
 
         // Take polygon points
@@ -541,7 +559,7 @@ export class PatrolToken {
     }
 
     #getNextDestination() {
-        const startOffset = Patrol.grid.getOffset({ x: this.token.bounds.x, y: this.token.bounds.y });
+        const startOffset = this.startOffset;
         const visited = new Set();
         const frontier = [startOffset];
         const cells = [];
