@@ -46,6 +46,10 @@
             "migrateOnStartupDialog": {
                 "name": "Open migration dialog on startup",
                 "hint": "If enabled, the module will open a dialog to migrate the data from the V13 data structure to the V14 one on startup."
+            },
+            "allowTokenOverlap": {
+                "name": "Allow Token Overlap",
+                "hint": "If enabled, patrolling tokens ignore other tokens on their path and move through them instead of waiting or turning back. Useful for narrow corridors."
             }
         },
         "tokenConfig": {

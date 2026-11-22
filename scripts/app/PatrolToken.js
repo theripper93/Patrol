@@ -286,7 +286,7 @@ export class PatrolToken {
 
         let next = this.#path[step];
 
-        const checkOccupied = true;
+        const checkOccupied = !getSetting("allowTokenOverlap");
         if (checkOccupied) {
             let occupied = canvas.tokens.placeables.find(t => {
                 if (t.id === this.token.id) return false;

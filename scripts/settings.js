@@ -46,6 +46,12 @@ export function registerSettings() {
             scope: "world",
             config: true,
         },
+        allowTokenOverlap: {
+            type: Boolean,
+            default: false,
+            scope: "world",
+            config: true,
+        },
         hidePatrolButtonInSidebar: {
             type: Boolean,
             default: false,
