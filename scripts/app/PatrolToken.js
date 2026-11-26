@@ -352,7 +352,7 @@ export class PatrolToken {
             this.#lastDoor = next.door;
         }
 
-        await this.token.document.move([next], { autoRotate: true, constrainOptions: { ignoreWalls: true }, animation: { duration: getSetting("animationDuration") } });
+        await this.token.document.move([next], { autoRotate: game.settings.get("core", "tokenAutoRotate"), constrainOptions: { ignoreWalls: true }, animation: { duration: getSetting("animationDuration") } });
         if (this.token.movementAnimationPromise) return this.token.movementAnimationPromise;
     }
 
